@@ -9,10 +9,10 @@ Please install from the [zip file](https://github.com/lydian/plugin.video.eyny/a
 
 ## Screenshot
 1. Category
-!(https://github.com/lydian/plugin.video.eyny/raw/master/resources/screenshot/category.png "Category")
+![](https://github.com/lydian/plugin.video.eyny/raw/master/resources/screenshot/category.png "Category")
 2. Video list
-!(https://github.com/lydian/plugin.video.eyny/raw/master/resources/screenshot/video_list.png "Video List")
+![](https://github.com/lydian/plugin.video.eyny/raw/master/resources/screenshot/video_list.png "Video List")
 3. Settings
-!(https://github.com/lydian/plugin.video.eyny/raw/master/resources/screenshot/settings.png "Settings")
+![](https://github.com/lydian/plugin.video.eyny/raw/master/resources/screenshot/settings.png "Settings")
 
 
