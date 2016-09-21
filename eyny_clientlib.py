@@ -36,13 +36,13 @@ class EynyForum(object):
             path, headers=header, **kwargs
         ).text
         soup = BeautifulSoup(html, 'html5lib')
-        return soup
+        return path, soup
 
     def login(self):
         if self.is_login:
             return True
         login_url = 'http://' + self.base_url + '/member.php'
-        soup = self._visit_and_parse(
+        _, soup = self._visit_and_parse(
             '/member.php',
             params={
                 'referer': 'http://' + self.base_url + '/index.php',
@@ -73,7 +73,7 @@ class EynyForum(object):
             'loginsubmit': 'true',
             'cookietime': cookietime
         }
-        soup = self._visit_and_parse(
+        _, soup = self._visit_and_parse(
             '/member.php',
             method='post',
             data=post_data,
@@ -92,25 +92,35 @@ class EynyForum(object):
             self.is_login = False
         return self.is_login
 
-    def get_video_link(self, vid):
+    def get_video_link(self, vid, size):
         if not self.is_login:
-            if self.login():
+            if not self.login():
                 raise ValueError('Failed to login')
 
-        soup = self._visit_and_parse(
-                '/video.php', params={'mod': 'video', 'vid': vid})
+        current_url, soup = self._visit_and_parse(
+                '/video.php',
+                params={'mod': 'video', 'vid': vid, 'size': size})
         title = soup.find('title').string.replace(u'-  伊莉影片區', '').strip()
 
-        def find_js(tag):
-            return (
-                tag.name == 'script'
-                and re.search('jwplayer', str(tag)) is not None
-            )
-        js = str(soup.find(find_js))
-        if js is None:
-            print soup
+        sizes = [
+            int(elem.string)
+            for elem in soup.find_all(lambda tag: (
+                tag.name == 'a'
+                and re.search(
+                    'mod=video&vid=%s&size=\d+' % vid,
+                    tag.attrs.get('href', ''))
+        ))]
+        sizes.reverse()
+
+        js = str(soup.find(lambda tag: (
+            tag.name == 'script'
+            and re.search('jwplayer', str(tag)) is not None
+        )))
         match = re.search(
-                r"width: (?P<width>\d+),\s+height: (?P<height>\d+),\s+image: '(?P<image_url>.*)',\s+file: '(?P<video_url>.*)'",
+            r"width: (?P<width>\d+),\s+"
+            r"height: (?P<height>\d+),\s+"
+            r"image: '(?P<image_url>.*)',\s+"
+            r"file: '(?P<video_url>.*)'",
             js)
         image_url = match.group('image_url')
         video_url = match.group('video_url')
@@ -118,10 +128,12 @@ class EynyForum(object):
             'title': title,
             'image': image_url,
             'video': video_url,
+            'current_url': current_url,
+            'sizes': sizes
         }
 
     def list_filters(self):
-        soup = self._visit_and_parse('/video.php')
+        _, soup = self._visit_and_parse('/video.php')
         def find_target(tag):
             return (
                 tag.name == 'a'
@@ -156,7 +168,7 @@ class EynyForum(object):
         if orderby is not None:
             params['orderby'] = orderby
 
-        soup = self._visit_and_parse(path, params=params)
+        current_url, soup = self._visit_and_parse(path, params=params)
         pages = soup.find('div', class_="pg")
         if pages is None:
             last_page = 1
@@ -166,12 +178,43 @@ class EynyForum(object):
             ).group('last_page'))
 
         def parse_vid(path):
-            return re.search('vid=(?P<vid>[^&]+)', path).group('vid')
-        videos = [
-            {
-                'vid': parse_vid(element.find('a').attrs['href']),
-                'image': element.find('img').attrs['src'],
-                'title': element.find('img').attrs['title']
-            } for element in pages.find_next('table').find_all('td')
-        ]
-        return {'videos': videos, 'current_page': page, 'last_page': last_page}
+            return
+
+        videos = []
+        for element in pages.find_next('table').find_all('td'):
+            link = element.find('a').attrs['href']
+            vid = re.search('vid=(?P<vid>[^&]+)', link).group('vid')
+            image = element.find('img').attrs['src']
+            title = element.find('img').attrs['title']
+            info = element.find('p', class_='channel-video-title').find_next(
+                lambda tag: tag.name == 'p' and len(tag.contents) > 0
+            ).font
+            quality = int(info.find_all('font')[1].string)
+            duration = info.find_all('font')[2].string
+            def duration_to_seconds(duration_str):
+                t = duration_str.split(':')
+                t.reverse()
+                duration = 0
+                for idx, val in enumerate(t):
+                    duration += int(val) * 60 ** idx
+                return duration
+            duration_in_seconds = duration_to_seconds(duration)
+
+            videos.append({
+                'vid': vid,
+                'image': image,
+                'title': title,
+                'quality': quality,
+                'duration': duration_in_seconds
+            })
+        return {
+            'videos': videos,
+            'current_page': page,
+            'last_page': last_page,
+            'current_url': current_url
+        }
+
+if __name__ == '__main__':
+    import os
+    eyny = EynyForum(*os.environ['EYNY_STRING'].split(':'))
+    print eyny.get_video_link(1350930, 1080)

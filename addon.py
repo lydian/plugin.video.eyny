@@ -41,12 +41,14 @@ class EynyGui(object):
         query['mode'] = mode
         return self.base_url + '?' + urllib.urlencode(query)
 
-    def build_request_url(self, url):
+    def build_request_url(self, url, referer):
         USER_AGENT = (
                 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) '
                 'AppleWebKit/601.7.8 (KHTML, like Gecko) '
                 'Version/9.1.3 Safari/601.7.8')
-        added_header = url + '|' + urllib.urlencode({'User-Agent': USER_AGENT})
+        added_header = url + '|' + urllib.urlencode({
+            'User-Agent': USER_AGENT,
+            'Referer': referer})
         return added_header
 
     def main(self):
@@ -80,12 +82,19 @@ class EynyGui(object):
         for video in result['videos']:
             li = xbmcgui.ListItem(label=video['title'])
             li.setProperty('IsPlayable', 'true')
-            image_url = self.build_request_url(video['image'])
+            image_url = self.build_request_url(
+                video['image'], result['current_url'])
             li.setArt({
                 'fanart': image_url,
                 'icon': image_url,
                 'thumb': image_url
             })
+            li.addStreamInfo('video', {
+                'width': video['quality'],
+                'aspect': 1.78,
+                'duration': video['duration']
+            })
+            li.setProperty('VideoResolution', str(video['quality']))
             xbmcplugin.addDirectoryItem(
                 handle=self.addon_handle,
                 url=self._build_url('video', vid=video['vid']),
@@ -100,10 +109,26 @@ class EynyGui(object):
                 isFolder=True)
         xbmcplugin.endOfDirectory(addon_handle)
 
-    def play_video(self, vid):
-        play_info = self.eyny.get_video_link(vid)
+    def play_video(self, vid, size=None):
+        try:
+            play_info = self.eyny.get_video_link(vid, size)
+        except ValueError:
+            xbmcgui.Dialog().notification(
+                heading='Error',
+                message='Failed to login',
+                icon=xbmcgui.NOTIFICATION_ERROR)
+            return
+
+        if size is None and len(play_info['sizes']) > 1:
+            ret = int(xbmcgui.Dialog().select(
+                'Please choose quality',
+                map(str, play_info['sizes'])))
+            self.play_video(vid, ret)
+
         play_item = xbmcgui.ListItem(
-            path=self.build_request_url(play_info['video']))
+            path=self.build_request_url(
+                play_info['video'],
+                play_info['current_url']))
         play_item.setProperty( "IsPlayable", "true" )
         play_item.setInfo(
             type="Video",
