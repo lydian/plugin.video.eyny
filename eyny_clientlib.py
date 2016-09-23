@@ -7,6 +7,7 @@ import urlparse
 import requests
 from bs4 import BeautifulSoup
 
+
 class EynyForum(object):
 
     def __init__(self, user_name, password):
@@ -36,6 +37,10 @@ class EynyForum(object):
             path, headers=header, **kwargs
         ).text
         soup = BeautifulSoup(html, 'html5lib')
+        having_info = soup.find('div', id='messagetext')
+        if having_info:
+            message = having_info.p.contents[0]
+            raise ValueError(message)
         return path, soup
 
     def login(self):
@@ -169,6 +174,17 @@ class EynyForum(object):
             params['orderby'] = orderby
 
         current_url, soup = self._visit_and_parse(path, params=params)
+        validate_form = soup.find(lambda tag: (
+            tag.name == 'form'
+            and tag.find('input', attrs={'value': re.compile('.*Yes.*')})
+        ))
+        if validate_form:
+            data = dict(
+                (input_.attrs['name'], input_.attrs['value'])
+                for input_ in validate_form.find_all('input'))
+            current_url, soup = self._visit_and_parse(
+                path, params=params, method='post', data=data)
+
         pages = soup.find('div', class_="pg")
         if pages is None:
             last_page = 1

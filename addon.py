@@ -70,7 +70,14 @@ class EynyGui(object):
         xbmcplugin.endOfDirectory(addon_handle)
 
     def list_video(self, cid=None, page=1, orderby=None):
-        result = self.eyny.list_videos(cid=cid, page=page, orderby=orderby)
+        try:
+            result = self.eyny.list_videos(cid=cid, page=page, orderby=orderby)
+        except ValueError as e:
+            xbmcgui.Dialog().ok(
+                heading='Error',
+                line1=unicode(e).encode('utf-8'))
+            return
+
         if page > 1:
             xbmcplugin.addDirectoryItem(
                 handle=self.addon_handle,
@@ -112,11 +119,10 @@ class EynyGui(object):
     def play_video(self, vid, size=None):
         try:
             play_info = self.eyny.get_video_link(vid, size)
-        except ValueError:
+        except ValueError as e:
             xbmcgui.Dialog().notification(
                 heading='Error',
-                message='Failed to login',
-                icon=xbmcgui.NOTIFICATION_ERROR)
+                message=unicode(e))
             return
 
         if size is None and len(play_info['sizes']) > 1:
