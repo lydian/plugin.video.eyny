@@ -60,7 +60,7 @@ class EynyGui(object):
                 url=self._build_url('list', cid=category['cid']),
                 listitem=li,
                 isFolder=True)
-        for orderby in filters['orderbys']:
+        for orderby in filters['mod']:
             li = xbmcgui.ListItem(orderby['name'])
             xbmcplugin.addDirectoryItem(
                 handle=self.addon_handle,
@@ -69,9 +69,9 @@ class EynyGui(object):
                 isFolder=True)
         xbmcplugin.endOfDirectory(addon_handle)
 
-    def list_video(self, cid=None, page=1, orderby=None):
+    def list_video(self, cid=None, page=1, orderby='channel'):
         try:
-            result = self.eyny.list_videos(cid=cid, page=page, orderby=orderby)
+            result = self.eyny.list_videos(cid=cid, page=page, mod=orderby)
         except ValueError as e:
             xbmcgui.Dialog().ok(
                 heading='Error',
@@ -101,6 +101,7 @@ class EynyGui(object):
                 'aspect': 1.78,
                 'duration': video['duration']
             })
+            li.setInfo('video', {'size': video['quality']})
             li.setProperty('VideoResolution', str(video['quality']))
             xbmcplugin.addDirectoryItem(
                 handle=self.addon_handle,

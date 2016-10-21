@@ -13,7 +13,7 @@ class EynyForum(object):
     def __init__(self, user_name, password):
         self.user_name = user_name
         self.password = password
-        self.base_url = random.choice(['www72.eyny.com', 'www22.eyny.com'])
+        self.base_url = random.choice(['video.eyny.com'])
         self.session = requests.Session()
         self.is_login = False
 
@@ -137,43 +137,54 @@ class EynyForum(object):
             'sizes': sizes
         }
 
-    def list_filters(self):
-        _, soup = self._visit_and_parse('/video.php')
-        def find_target(tag):
-            return (
-                tag.name == 'a'
-                and tag.attrs.get('href', None) == 'video.php'
-                and tag.string == u'伊莉影片區'
-            )
-        first_table = (soup
-            .find(find_target)
-            .find_parent('table')
-            .find_next_sibling('table')
-        )
-        second_table = first_table.find_next_sibling('table')
+    def parse_filters(self, soup):
+        first_table = soup.find('table', class_='block').find('tr')
+        second_table = first_table.find_next_sibling('tr')
+
+        main_category = first_table.find('table')
         categories = [{
             'name': element.string,
             'cid': dict(urlparse.parse_qsl(
                 urlparse.urlsplit(element.attrs['href']).query
             ))['cid']
-        } for element in first_table.find_all('a')]
+        } for element in main_category.find_all('a')]
+
+        if len(first_table.find_all('table')) > 1:
+            sub_categories = [{
+                'name': elem.string,
+                'cid': dict(urlparse.parse_qsl(
+                    urlparse.urlsplit(elem.attrs['href']).query
+                ))['cid']
+            }for elem in first_table.find_all('table')[1].find_all('a')]
+        else:
+            sub_categories = []
 
         orderbys = [{
             'name': element.string,
             'orderby': re.search(
-                'orderby=([^&]+)', element.attrs['href']).group(1)
+                'mod=([^&]+)', element.attrs['href']).group(1)
             } for element in second_table.find_all('a')]
-        return {'categories': categories, 'orderbys': orderbys}
+        return {
+            'categories': categories,
+            'sub_categories': sub_categories,
+            'mod': orderbys
+        }
 
-    def list_videos(self, cid=None, page=1, orderby=None):
-        path = '/video.php'
-        params = {'mod': 'channel', 'page': page}
+
+    def list_filters(self):
+        _, soup = self._visit_and_parse('/')
+        return self.parse_filters(soup)
+
+    def list_videos(self, cid=None, page=1, mod='channel'):
+        path = '/index.php'
+        params = {'page': page}
         if cid is not None:
             params['cid'] = cid
-        if orderby is not None:
-            params['orderby'] = orderby
+        if mod is not None:
+            params['mod'] = mod
 
         current_url, soup = self._visit_and_parse(path, params=params)
+
         validate_form = soup.find(lambda tag: (
             tag.name == 'form'
             and tag.find('input', attrs={'value': re.compile('.*Yes.*')})
@@ -185,7 +196,11 @@ class EynyForum(object):
             current_url, soup = self._visit_and_parse(
                 path, params=params, method='post', data=data)
 
-        pages = soup.find('div', class_="pg")
+        video_table = soup.find_all('table', class_='block')[1]
+        pages_row = video_table.find('tr')
+        videos_row = pages_row.find_next_sibling('tr')
+
+        pages = pages_row.find('div', class_="pg")
         if pages is None:
             last_page = 1
         else:
@@ -197,7 +212,7 @@ class EynyForum(object):
             return
 
         videos = []
-        for element in pages.find_next('table').find_all('td'):
+        for element in videos_row.find_all('td'):
             link = element.find('a').attrs['href']
             vid = re.search('vid=(?P<vid>[^&]+)', link).group('vid')
             image = element.find('img').attrs['src']
@@ -224,6 +239,7 @@ class EynyForum(object):
                 'duration': duration_in_seconds
             })
         return {
+            'category': self.parse_filters(soup),
             'videos': videos,
             'current_page': page,
             'last_page': last_page,
@@ -233,4 +249,4 @@ class EynyForum(object):
 if __name__ == '__main__':
     import os
     eyny = EynyForum(*os.environ['EYNY_STRING'].split(':'))
-    print eyny.get_video_link(1350930, 1080)
+    print eyny.list_filters()
