@@ -198,7 +198,7 @@ class EynyForum(object):
 
         video_table = soup.find_all('table', class_='block')[1]
         pages_row = video_table.find('tr')
-        videos_row = pages_row.find_next_sibling('tr')
+        videos_rows = list(pages_row.find_next_siblings('tr'))[:-2]
 
         pages = pages_row.find('div', class_="pg")
         if pages is None:
@@ -212,32 +212,38 @@ class EynyForum(object):
             return
 
         videos = []
-        for element in videos_row.find_all('td'):
-            link = element.find('a').attrs['href']
-            vid = re.search('vid=(?P<vid>[^&]+)', link).group('vid')
-            image = element.find('img').attrs['src']
-            title = element.find('img').attrs['title']
-            info = element.find('p', class_='channel-video-title').find_next(
-                lambda tag: tag.name == 'p' and len(tag.contents) > 0
-            ).font
-            quality = int(info.find_all('font')[1].string)
-            duration = info.find_all('font')[2].string
-            def duration_to_seconds(duration_str):
-                t = duration_str.split(':')
-                t.reverse()
-                duration = 0
-                for idx, val in enumerate(t):
-                    duration += int(val) * 60 ** idx
-                return duration
-            duration_in_seconds = duration_to_seconds(duration)
+        for videos_row in videos_rows:
+            for element in videos_row.find_all('td'):
+                link = element.find('a').attrs['href']
+                match = re.search('vid=(?P<vid>[^&]+)', link)
+                if match is None:
+                    continue
+                vid = re.search('vid=(?P<vid>[^&]+)', link).group('vid')
+                image = element.find('img').attrs['src']
+                title = element.find('img').attrs['title']
+                info = element.find(
+                    'p', class_='channel-video-title'
+                ).find_next(
+                    lambda tag: tag.name == 'p' and len(tag.contents) > 0
+                ).font
+                quality = int(info.find_all('font')[1].string)
+                duration = info.find_all('font')[2].string
+                def duration_to_seconds(duration_str):
+                    t = duration_str.split(':')
+                    t.reverse()
+                    duration = 0
+                    for idx, val in enumerate(t):
+                        duration += int(val) * 60 ** idx
+                    return duration
+                duration_in_seconds = duration_to_seconds(duration)
 
-            videos.append({
-                'vid': vid,
-                'image': image,
-                'title': title,
-                'quality': quality,
-                'duration': duration_in_seconds
-            })
+                videos.append({
+                    'vid': vid,
+                    'image': image,
+                    'title': title,
+                    'quality': quality,
+                    'duration': duration_in_seconds
+                })
         return {
             'category': self.parse_filters(soup),
             'videos': videos,
@@ -249,4 +255,4 @@ class EynyForum(object):
 if __name__ == '__main__':
     import os
     eyny = EynyForum(*os.environ['EYNY_STRING'].split(':'))
-    print eyny.list_filters()
+    print eyny.list_videos(cid=55)
