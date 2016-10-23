@@ -1,0 +1,3 @@
+# v0.1.1
+1. update eyny client_lib so that it can parse the new eyny video site.
+
