@@ -22,7 +22,6 @@ class EynyForum(object):
             if not path.startswith('/'):
                 path = '/' + path
             path = 'http://' + self.base_url + path
-
         user_agent = (
             "Mozilla/5.0 (Windows NT 5.1) "
             "AppleWebKit/537.36 (KHTML, like Gecko) "
@@ -196,7 +195,7 @@ class EynyForum(object):
             current_url, soup = self._visit_and_parse(
                 path, params=params, method='post', data=data)
 
-        video_table = soup.find_all('table', class_='block')[1]
+        video_table = soup.find_all('table', class_='block')[2]
         pages_row = video_table.find('tr')
         videos_rows = list(pages_row.find_next_siblings('tr'))[:-2]
 
@@ -227,7 +226,7 @@ class EynyForum(object):
                     lambda tag: tag.name == 'p' and len(tag.contents) > 0
                 ).font
                 quality = int(info.find_all('font')[1].string)
-                duration = info.find_all('font')[2].string
+                duration = element.center.div.div.div.string
                 def duration_to_seconds(duration_str):
                     t = duration_str.split(':')
                     t.reverse()
