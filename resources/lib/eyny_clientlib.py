@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import random
 import re
-import urllib
 import urlparse
 
 import requests
@@ -45,7 +44,6 @@ class EynyForum(object):
     def login(self):
         if self.is_login:
             return True
-        login_url = 'http://' + self.base_url + '/member.php'
         _, soup = self._visit_and_parse(
             '/member.php',
             params={
@@ -59,7 +57,7 @@ class EynyForum(object):
         )['id'].replace('main_messaqge_', '')
         form_hash = soup.find(
             'input',
-            attrs={'type':"hidden", 'name':"formhash"}
+            attrs={'type': "hidden", 'name': "formhash"}
         )['value']
         cookietime = soup.find(
             "input",
@@ -112,8 +110,9 @@ class EynyForum(object):
                 tag.name == 'a'
                 and re.search(
                     'mod=video&vid=%s&size=\d+' % vid,
-                    tag.attrs.get('href', ''))
-        ))]
+                    tag.attrs.get('href', '')))
+            )
+        ]
         sizes.reverse()
 
         js = str(soup.find(lambda tag: (
@@ -195,6 +194,7 @@ class EynyForum(object):
                     # video without quality is usally a broken link
                     continue
                 duration = element.center.div.div.div.string
+
                 def duration_to_seconds(duration_str):
                     t = duration_str.split(':')
                     t.reverse()
@@ -289,9 +289,3 @@ class EynyForum(object):
             'last_page': self._parse_last_page(pages_row),
             'current_url': current_url
         }
-
-if __name__ == '__main__':
-    import os
-    eyny = EynyForum(*os.environ['EYNY_STRING'].split(':'))
-    print eyny.search_video(u'三國', page=4)
-    print eyny.list_videos(cid=55, page=4)

@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
+import os
 
 import pytest
 
-from resources.lib.eyny_clientlib import *
+from resources.lib.eyny_clientlib import EynyForum
 
 
 class TestEynyForum(object):
@@ -20,6 +21,16 @@ class TestEynyForum(object):
             for video in result['videos']
             for col in ['vid', 'image', 'title', 'quality', 'duration']
         )
+
+    @pytest.mark.skipif(
+        os.environ.get('EYNY_STRING', None) is None,
+        reason="requires setting EYNY_STRING in environment variable")
+    def test_login(self):
+        user_name, password = os.environ['EYNY_STRING'].split(':')
+        forum = EynyForum(user_name, password)
+        assert not forum.is_login
+        assert forum.login()
+        assert forum.is_login
 
     def test_list_filters(Self, forum):
         result = forum.list_filters()

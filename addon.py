@@ -3,8 +3,6 @@ import sys
 import urlparse
 import urllib
 
-import html5lib
-import urlresolver
 import xbmcaddon
 import xbmcgui
 import xbmcplugin
@@ -39,7 +37,6 @@ class EynyGui(object):
             self.search_video(
                 search_string=args.get('search_string'),
                 page=int(args.get('page', 1)))
-
 
     def _build_url(self, mode, **kwargs):
         query = kwargs
@@ -165,10 +162,10 @@ class EynyGui(object):
             path=self.build_request_url(
                 play_info['video'],
                 play_info['current_url']))
-        play_item.setProperty( "IsPlayable", "true" )
+        play_item.setProperty("IsPlayable", "true")
         play_item.setInfo(
             type="Video",
-            infoLabels={ "Title": play_info['title']})
+            infoLabels={"Title": play_info['title']})
         xbmcplugin.setResolvedUrl(self.addon_handle, True, listitem=play_item)
 
 
