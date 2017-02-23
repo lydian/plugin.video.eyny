@@ -1,3 +1,6 @@
 # v0.1.1
 1. update eyny client_lib so that it can parse the new eyny video site.
-
+# v0.2.0
+1. Add search function
+# v0.2.1
+1. Fix page parsing issue

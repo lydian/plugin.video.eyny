@@ -213,6 +213,27 @@ class EynyForum(object):
                 })
         return videos
 
+    def _parse_last_page(self, pages_row):
+        pages = pages_row.find('div', class_="pg")
+        if pages is None:
+            return 1
+
+        last_page = re.search(
+            '(?P<last_page>\d+)', pages.find('a', class_="last").string
+        ).group('last_page')
+        if last_page is not None:
+            return int(last_page)
+
+        last_page = [
+            page.string.strip('.')
+            for page in reversed(list(
+                pages_row.find('div', class_='pg').children))
+            if page.string != u'下一頁']
+        if len(last_page) > 0:
+            return int(last_page[0])
+        return 1
+
+
     def search_video(self, search_txt, day=None, orderby=None, cid=0, page=1):
         path = '/index.php'
         params = {
@@ -226,17 +247,12 @@ class EynyForum(object):
         current_url, soup = self._visit_and_parse(path, params=params)
         video_table = soup.find_all('table', class_='block')[2]
         pages_row = video_table.find('tr')
-        last_page = [
-            page.string
-            for page in reversed(list(
-                pages_row.find('div', class_='pg').children))
-            if page.string != u'下一頁']
-        last_page = last_page[0] if last_page else 1
+
         videos_rows = list(pages_row.find_next_siblings('tr'))[:-2]
         return {
             'videos': self._get_video_list(videos_rows),
             'current_page': page,
-            'last_page': last_page,
+            'last_page': self._parse_last_page(pages_row),
             'current_url': current_url
         }
 
@@ -264,24 +280,19 @@ class EynyForum(object):
         video_table = soup.find_all('table', class_='block')[2]
         pages_row = video_table.find('tr')
         videos_rows = list(pages_row.find_next_siblings('tr'))[:-2]
-        pages = pages_row.find('div', class_="pg")
-        if pages is None:
-            last_page = 1
-        else:
-            last_page = int(re.search(
-                '(?P<last_page>\d+)', pages.find('a', class_="last").string
-            ).group('last_page'))
+
         videos = self._get_video_list(videos_rows)
 
         return {
             'category': self.parse_filters(soup),
             'videos': videos,
             'current_page': page,
-            'last_page': last_page,
+            'last_page': self._parse_last_page(pages_row),
             'current_url': current_url
         }
 
 if __name__ == '__main__':
     import os
     eyny = EynyForum(*os.environ['EYNY_STRING'].split(':'))
-    print eyny.search_video('test', page=4)
+    print eyny.search_video(u'三國', page=4)
+    print eyny.list_videos(cid=55, page=4)
