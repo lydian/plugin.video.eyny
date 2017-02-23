@@ -218,12 +218,12 @@ class EynyForum(object):
         if pages is None:
             return 1
 
-        last_page = re.search(
-            '(?P<last_page>\d+)', pages.find('a', class_="last").string
-        ).group('last_page')
+        last_page = pages.find('a', class_='last')
         if last_page is not None:
-            return int(last_page)
-
+            last_page = re.search(
+                '(?P<last_page>\d+)', last_page.string).group('last_page')
+            if last_page is not None:
+                return int(last_page)
         last_page = [
             page.string.strip('.')
             for page in reversed(list(
@@ -232,7 +232,6 @@ class EynyForum(object):
         if len(last_page) > 0:
             return int(last_page[0])
         return 1
-
 
     def search_video(self, search_txt, day=None, orderby=None, cid=0, page=1):
         path = '/index.php'

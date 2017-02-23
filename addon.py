@@ -9,7 +9,7 @@ import xbmcaddon
 import xbmcgui
 import xbmcplugin
 
-from eyny_clientlib import EynyForum
+from resources.lib.eyny_clientlib import EynyForum
 
 
 class EynyGui(object):
