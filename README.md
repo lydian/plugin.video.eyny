@@ -5,7 +5,7 @@ It serves many animation, movies, or short videos. This addon is aimed to easily
 access those content from kodi.
 
 ## Install
-Please install from the [repository](https://github.com/lydian/kodi_repository/raw/master/repository.lydian/repository.lydian.zip)
+Please install from the [repository](https://raw.githubusercontent.com/lydian/kodi_repository/master/repository.lydian/repository.lydian-1.0.1.zip)
 
 ## Screenshot
 1. Category
