@@ -169,10 +169,76 @@ class EynyForum(object):
             'mod': orderbys
         }
 
-
     def list_filters(self):
         _, soup = self._visit_and_parse('/')
         return self.parse_filters(soup)
+
+    def _get_video_list(self, videos_rows):
+        videos = []
+        for videos_row in videos_rows:
+            for element in videos_row.find_all('td'):
+                link = element.find('a').attrs['href']
+                match = re.search('vid=(?P<vid>[^&]+)', link)
+                if match is None:
+                    continue
+                vid = re.search('vid=(?P<vid>[^&]+)', link).group('vid')
+                image = element.find('img').attrs['src']
+                title = element.find('img').attrs['title']
+                info = element.find(
+                    'p', class_='channel-video-title'
+                ).find_next(
+                    lambda tag: tag.name == 'p' and len(tag.contents) > 0
+                ).font
+                try:
+                    quality = int(info.find_all('font')[1].string)
+                except:
+                    # video without quality is usally a broken link
+                    continue
+                duration = element.center.div.div.div.string
+                def duration_to_seconds(duration_str):
+                    t = duration_str.split(':')
+                    t.reverse()
+                    duration = 0
+                    for idx, val in enumerate(t):
+                        duration += int(val) * 60 ** idx
+                    return duration
+                duration_in_seconds = duration_to_seconds(duration)
+
+                videos.append({
+                    'vid': vid,
+                    'image': image,
+                    'title': title,
+                    'quality': quality,
+                    'duration': duration_in_seconds
+                })
+        return videos
+
+    def search_video(self, search_txt, day=None, orderby=None, cid=0, page=1):
+        path = '/index.php'
+        params = {
+            'mod': 'search',
+            'cid': cid,
+            'srchtxt': search_txt,
+            'date': day or '',
+            'orderby': orderby or '',
+            'page': page
+        }
+        current_url, soup = self._visit_and_parse(path, params=params)
+        video_table = soup.find_all('table', class_='block')[2]
+        pages_row = video_table.find('tr')
+        last_page = [
+            page.string
+            for page in reversed(list(
+                pages_row.find('div', class_='pg').children))
+            if page.string != u'下一頁']
+        last_page = last_page[0] if last_page else 1
+        videos_rows = list(pages_row.find_next_siblings('tr'))[:-2]
+        return {
+            'videos': self._get_video_list(videos_rows),
+            'current_page': page,
+            'last_page': last_page,
+            'current_url': current_url
+        }
 
     def list_videos(self, cid=None, page=1, mod='channel'):
         path = '/index.php'
@@ -198,7 +264,6 @@ class EynyForum(object):
         video_table = soup.find_all('table', class_='block')[2]
         pages_row = video_table.find('tr')
         videos_rows = list(pages_row.find_next_siblings('tr'))[:-2]
-
         pages = pages_row.find('div', class_="pg")
         if pages is None:
             last_page = 1
@@ -206,43 +271,8 @@ class EynyForum(object):
             last_page = int(re.search(
                 '(?P<last_page>\d+)', pages.find('a', class_="last").string
             ).group('last_page'))
+        videos = self._get_video_list(videos_rows)
 
-        def parse_vid(path):
-            return
-
-        videos = []
-        for videos_row in videos_rows:
-            for element in videos_row.find_all('td'):
-                link = element.find('a').attrs['href']
-                match = re.search('vid=(?P<vid>[^&]+)', link)
-                if match is None:
-                    continue
-                vid = re.search('vid=(?P<vid>[^&]+)', link).group('vid')
-                image = element.find('img').attrs['src']
-                title = element.find('img').attrs['title']
-                info = element.find(
-                    'p', class_='channel-video-title'
-                ).find_next(
-                    lambda tag: tag.name == 'p' and len(tag.contents) > 0
-                ).font
-                quality = int(info.find_all('font')[1].string)
-                duration = element.center.div.div.div.string
-                def duration_to_seconds(duration_str):
-                    t = duration_str.split(':')
-                    t.reverse()
-                    duration = 0
-                    for idx, val in enumerate(t):
-                        duration += int(val) * 60 ** idx
-                    return duration
-                duration_in_seconds = duration_to_seconds(duration)
-
-                videos.append({
-                    'vid': vid,
-                    'image': image,
-                    'title': title,
-                    'quality': quality,
-                    'duration': duration_in_seconds
-                })
         return {
             'category': self.parse_filters(soup),
             'videos': videos,
@@ -254,4 +284,4 @@ class EynyForum(object):
 if __name__ == '__main__':
     import os
     eyny = EynyForum(*os.environ['EYNY_STRING'].split(':'))
-    print eyny.list_videos(cid=55)
+    print eyny.search_video('test', page=4)

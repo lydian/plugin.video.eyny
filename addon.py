@@ -35,6 +35,11 @@ class EynyGui(object):
         if mode == 'video':
             self.play_video(args['vid'])
 
+        if mode == 'search':
+            self.search_video(
+                search_string=args.get('search_string'),
+                page=int(args.get('page', 1)))
+
 
     def _build_url(self, mode, **kwargs):
         query = kwargs
@@ -53,6 +58,12 @@ class EynyGui(object):
 
     def main(self):
         filters = self.eyny.list_filters()
+        xbmcplugin.addDirectoryItem(
+                handle=self.addon_handle,
+                url=self._build_url('search'),
+                listitem=xbmcgui.ListItem('Search'),
+                isFolder=True)
+
         for category in filters['categories']:
             li = xbmcgui.ListItem(category['name'])
             xbmcplugin.addDirectoryItem(
@@ -69,28 +80,20 @@ class EynyGui(object):
                 isFolder=True)
         xbmcplugin.endOfDirectory(addon_handle)
 
-    def list_video(self, cid=None, page=1, orderby='channel'):
-        try:
-            result = self.eyny.list_videos(cid=cid, page=page, mod=orderby)
-        except ValueError as e:
-            xbmcgui.Dialog().ok(
-                heading='Error',
-                line1=unicode(e).encode('utf-8'))
-            return
+    def _add_page_item(self, page, last_page, url_mode, **url_kwargs):
+        xbmcplugin.addDirectoryItem(
+            handle=self.addon_handle,
+            url=self._build_url(url_mode, page=page, **url_kwargs),
+            listitem=xbmcgui.ListItem(
+                '~~ Go to Page {}/{} ~~'.format(page, last_page)),
+            isFolder=True)
 
-        if page > 1:
-            xbmcplugin.addDirectoryItem(
-                handle=self.addon_handle,
-                url=self._build_url(
-                    'list', orderby=orderby, cid=cid, page=page - 1),
-                listitem=xbmcgui.ListItem('~~ Previous Page ~~'),
-                isFolder=True)
-
-        for video in result['videos']:
+    def _add_video_items(self, videos, current_url):
+        for video in videos:
             li = xbmcgui.ListItem(label=video['title'])
             li.setProperty('IsPlayable', 'true')
             image_url = self.build_request_url(
-                video['image'], result['current_url'])
+                video['image'], current_url)
             li.setArt({
                 'fanart': image_url,
                 'icon': image_url,
@@ -108,14 +111,40 @@ class EynyGui(object):
                 url=self._build_url('video', vid=video['vid']),
                 listitem=li,
                 isFolder=False)
-        if page < result['last_page']:
-            xbmcplugin.addDirectoryItem(
-                handle=self.addon_handle,
-                url=self._build_url(
-                    'list', orderby=orderby, cid=cid, page=page + 1),
-                listitem=xbmcgui.ListItem('~~ Next Page ~~'),
-                isFolder=True)
-        xbmcplugin.endOfDirectory(addon_handle)
+
+    def list_video(self, cid=None, page=1, orderby='channel'):
+        try:
+            result = self.eyny.list_videos(cid=cid, page=page, mod=orderby)
+        except ValueError as e:
+            xbmcgui.Dialog().ok(
+                heading='Error',
+                line1=unicode(e).encode('utf-8'))
+            return
+
+        self._add_video_items(result['videos'], result['current_url'])
+        if page < int(result['last_page']):
+            self._add_page_item(
+                page+1,
+                result['last_page'],
+                'list', orderby=orderby, cid=cid)
+        xbmcplugin.endOfDirectory(self.addon_handle)
+
+    def search_video(self, search_string=None, page=1):
+        if search_string is None:
+            search_string = xbmcgui.Dialog().input(
+                'Search term',
+                type=xbmcgui.INPUT_ALPHANUM)
+        result = self.eyny.search_video(search_string, page=page)
+
+        self._add_video_items(result['videos'], result['current_url'])
+        if page < int(result['last_page']):
+            self._add_page_item(
+                page + 1,
+                result['last_page'],
+                'search',
+                search_string=search_string
+            )
+        xbmcplugin.endOfDirectory(self.addon_handle)
 
     def play_video(self, vid, size=None):
         try:
