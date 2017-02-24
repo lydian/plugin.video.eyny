@@ -1,4 +1,5 @@
 # Eyny Video Addon
+[![Build Status](https://travis-ci.org/lydian/plugin.video.eyny.svg?branch=master)](https://travis-ci.org/lydian/plugin.video.eyny)
 
 [Eyny (伊莉論壇)](http://www.eyny.com) is a popular forum in Taiwan.
 It serves many animation, movies, or short videos. This addon is aimed to easily
