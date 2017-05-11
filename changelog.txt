@@ -4,3 +4,5 @@
 1. Add search function
 # v0.2.1
 1. Fix page parsing issue
+# v0.2.1
+1. Fix page parsing issue

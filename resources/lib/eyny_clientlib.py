@@ -183,17 +183,11 @@ class EynyForum(object):
                 vid = re.search('vid=(?P<vid>[^&]+)', link).group('vid')
                 image = element.find('img').attrs['src']
                 title = element.find('img').attrs['title']
-                info = element.find(
-                    'p', class_='channel-video-title'
-                ).find_next(
-                    lambda tag: tag.name == 'p' and len(tag.contents) > 0
-                ).font
-                try:
-                    quality = int(info.find_all('font')[1].string)
-                except:
-                    # video without quality is usally a broken link
-                    continue
-                duration = element.center.div.div.div.string
+                quality = int(element.find_all('p')[2].find(
+                    lambda e: e.name == 'font' and re.match('\d+', e.string)
+                ).string)
+
+                duration = element.find('a').div.div.string
 
                 def duration_to_seconds(duration_str):
                     t = duration_str.split(':')
