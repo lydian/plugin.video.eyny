@@ -184,7 +184,7 @@ class EynyForum(object):
                 image = element.find('img').attrs['src']
                 title = element.find('img').attrs['title']
                 quality = int(element.find_all('p')[2].find(
-                    lambda e: e.name == 'font' and re.match('\d+', e.string)
+                    lambda e: e.name == 'font' and re.match('^\d+$', e.string)
                 ).string)
 
                 duration = element.find('a').div.div.string
