@@ -12,10 +12,10 @@ class TestEynyForum(object):
     def forum(self):
         return EynyForum('user', 'test_password')
 
-    def _verify_valid_output(self, result):
+    def _verify_valid_output(self, result, expected_page=1):
         assert len(result['videos']) > 0
         assert isinstance(result['last_page'], int)
-        assert result['current_page'] == 1
+        assert result['current_page'] == expected_page
         assert all(
             col in video
             for video in result['videos']
@@ -45,8 +45,18 @@ class TestEynyForum(object):
         result = forum.search_video(search_string)
         self._verify_valid_output(result)
 
-    @pytest.mark.parametrize('cid', (
-        20, 55))
-    def test_list_videos(self, forum, cid):
-        result = forum.list_videos(cid)
-        self._verify_valid_output(result)
+    @pytest.fixture(params=[20, 55, 3])
+    def cid(self, request):
+        return request.param
+
+    @pytest.fixture(params=['channel', 'index'])
+    def mod(self, request):
+        return request.param
+
+    @pytest.fixture(params=[1, 2])
+    def page(self, request):
+        return request.param
+
+    def test_list_videos(self, forum, cid, mod, page):
+        result = forum.list_videos(cid=cid, page=page, mod=mod)
+        self._verify_valid_output(result, page)

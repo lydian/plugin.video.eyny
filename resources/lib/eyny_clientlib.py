@@ -176,6 +176,8 @@ class EynyForum(object):
         videos = []
         for videos_row in videos_rows:
             for element in videos_row.find_all('td'):
+                if element.find('a') is None:
+                    continue
                 link = element.find('a').attrs['href']
                 match = re.search('vid=(?P<vid>[^&]+)', link)
                 if match is None:
