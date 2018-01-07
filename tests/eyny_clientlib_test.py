@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import os
+import random
 
 import pytest
 
@@ -60,3 +61,17 @@ class TestEynyForum(object):
     def test_list_videos(self, forum, cid, mod, page):
         result = forum.list_videos(cid=cid, page=page, mod=mod)
         self._verify_valid_output(result, page)
+
+    @pytest.fixture
+    def vid(self, forum, cid, mod, page):
+        videos = forum.list_videos(cid, mod, page)
+        return random.choice(videos['videos'])['vid']
+
+    @pytest.mark.skipif(
+        os.environ.get('EYNY_STRING', None) is None,
+        reason="requires setting EYNY_STRING in environment variable")
+    def test_get_video_link(self, forum, vid):
+        user_name, password = os.environ['EYNY_STRING'].split(':')
+        forum = EynyForum(user_name, password)
+        result = forum.get_video_link(vid, None)
+        assert result['video'].startswith('http')

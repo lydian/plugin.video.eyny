@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import logging
 import random
 import re
 import urlparse
@@ -31,15 +32,16 @@ class EynyForum(object):
             "Host": self.base_url
         }
 
-        html = self.session.__getattribute__(method)(
+        request = self.session.__getattribute__(method)(
             path, headers=header, **kwargs
-        ).text
+        )
+        html = request.text
         soup = BeautifulSoup(html, 'html5lib')
         having_info = soup.find('div', id='messagetext')
         if having_info:
             message = having_info.p.contents[0]
             raise ValueError(message)
-        return path, soup
+        return request.url, soup
 
     def login(self):
         if self.is_login:
@@ -104,29 +106,20 @@ class EynyForum(object):
                 params={'mod': 'video', 'vid': vid, 'size': size})
         title = soup.find('title').string.replace(u'-  伊莉影片區', '').strip()
 
-        sizes = [
-            int(elem.string)
-            for elem in soup.find_all(lambda tag: (
-                tag.name == 'a'
-                and re.search(
-                    'mod=video&vid=%s&size=\d+' % vid,
-                    tag.attrs.get('href', '')))
-            )
-        ]
+        sizes = []
+        for elem in soup.find_all(lambda tag: (
+            tag.name == 'a'
+            and re.search(
+                'mod=video&vid=%s&size=\d+' % vid,
+                tag.attrs.get('href', '')))
+        ):
+            sizes.append(int(elem.string))
         sizes.reverse()
 
-        js = str(soup.find(lambda tag: (
-            tag.name == 'script'
-            and re.search('jwplayer', str(tag)) is not None
-        )))
-        match = re.search(
-            r"width: (?P<width>\d+),\s+"
-            r"height: (?P<height>\d+),\s+"
-            r"image: '(?P<image_url>.*)',\s+"
-            r"file: '(?P<video_url>.*)'",
-            js)
-        image_url = match.group('image_url')
-        video_url = match.group('video_url')
+        video_item = soup.find('video')
+        video_url = video_item.find('source').attrs['src']
+        image_url = video_item.attrs['poster']
+        logging.warning('VIDEO: {}'.format(video_url))
         return {
             'title': title,
             'image': image_url,
@@ -184,7 +177,7 @@ class EynyForum(object):
                     continue
                 vid = re.search('vid=(?P<vid>[^&]+)', link).group('vid')
                 image = element.find('img').attrs['src']
-                title = element.find('img').attrs['title']
+                title = element.find_all('p')[0].find('a').string
                 quality = int(element.find_all('p')[2].find(
                     lambda e: e.name == 'font' and re.match('^\d+$', e.string)
                 ).string)
@@ -272,7 +265,10 @@ class EynyForum(object):
             current_url, soup = self._visit_and_parse(
                 path, params=params, method='post', data=data)
 
-        video_table = soup.find_all('table', class_='block')[2]
+        video_table = soup.find(lambda tag: (
+            tag.name == 'a'
+            and re.search('mod=video&vid=', tag.attrs.get('href', '')))
+        ).find_parent('table')
         pages_row = video_table.find('tr')
         videos_rows = list(pages_row.find_next_siblings('tr'))[:-2]
 

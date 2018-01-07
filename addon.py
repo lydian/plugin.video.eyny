@@ -156,7 +156,7 @@ class EynyGui(object):
             ret = int(xbmcgui.Dialog().select(
                 'Please choose quality',
                 map(str, play_info['sizes'])))
-            self.play_video(vid, ret)
+            return self.play_video(vid, play_info['sizes'][ret])
 
         play_item = xbmcgui.ListItem(
             path=self.build_request_url(
