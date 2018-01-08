@@ -1,8 +1,12 @@
 # -*- coding: utf-8 -*-
+import codecs
+import json
+import os
 import sys
 import urlparse
 import urllib
 
+import xbmc
 import xbmcaddon
 import xbmcgui
 import xbmcplugin
@@ -19,6 +23,9 @@ class EynyGui(object):
         self.eyny = EynyForum(
             addon.getSetting('username'), addon.getSetting('password'))
         self.is_login = self.eyny.login()
+        self.search_history_file = os.path.join(
+            xbmc.translatePath(addon.getAddonInfo('profile')),
+            'search_history.json')
 
     def handle(self, args):
         mode = args.get('mode', None)
@@ -35,6 +42,7 @@ class EynyGui(object):
 
         if mode == 'search':
             self.search_video(
+                new_search=args.get('new_search', False),
                 search_string=args.get('search_string'),
                 page=int(args.get('page', 1)))
 
@@ -126,12 +134,53 @@ class EynyGui(object):
                 'list', orderby=orderby, cid=cid)
         xbmcplugin.endOfDirectory(self.addon_handle)
 
-    def search_video(self, search_string=None, page=1):
-        if search_string is None:
+    def update_search_history(self, search_string):
+        search_list = self.get_search_history()
+        search_string = search_string.decode('utf-8')
+        if search_string in search_list:
+            search_list.remove(search_string)
+        search_list = [search_string] + search_list
+        with codecs.open(
+            self.search_history_file, 'w', encoding='utf-8'
+        ) as fp:
+            json.dump(search_list[:20], fp)
+
+    def get_search_history(self):
+        if os.path.exists(self.search_history_file):
+            with codecs.open(
+                self.search_history_file, 'r', encoding='utf-8-sig'
+            ) as fp:
+                search_list = json.load(fp)
+        else:
+            search_list = []
+        return search_list
+
+    def search_video(self, new_search=False, search_string=None, page=1):
+        if new_search:
             search_string = xbmcgui.Dialog().input(
                 'Search term',
-                type=xbmcgui.INPUT_ALPHANUM)
+                type=xbmcgui.INPUT_ALPHANUM).strip()
+
+        if search_string is None:
+            xbmcplugin.addDirectoryItem(
+                handle=self.addon_handle,
+                url=self._build_url('search', new_search=True),
+                listitem=xbmcgui.ListItem("New Search"),
+                isFolder=True)
+
+            for search_string in self.get_search_history():
+                xbmcplugin.addDirectoryItem(
+                    handle=self.addon_handle,
+                    url=self._build_url(
+                        'search',
+                        search_string=search_string.encode('utf-8')),
+                    listitem=xbmcgui.ListItem(search_string),
+                    isFolder=True)
+            return xbmcplugin.endOfDirectory(self.addon_handle)
+
         result = self.eyny.search_video(search_string, page=page)
+        if len(result['videos']) > 0:
+            self.update_search_history(search_string)
 
         self._add_video_items(result['videos'], result['current_url'])
         if page < int(result['last_page']):

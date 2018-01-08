@@ -233,6 +233,7 @@ class EynyForum(object):
             'page': page
         }
         current_url, soup = self._visit_and_parse(path, params=params)
+        logging.warning(current_url)
         video_table = soup.find_all('table', class_='block')[2]
         pages_row = video_table.find('tr')
 
