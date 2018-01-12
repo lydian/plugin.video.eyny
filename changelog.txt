@@ -6,3 +6,9 @@
 1. Fix page parsing issue
 # v0.2.1
 1. Fix page parsing issue
+# v0.3.0
+1. Add Search function
+# v0.4.1
+1. Fix parsing issue
+2. Record search log for faster query next time.
+3. Fix the issue that resolution selection failed

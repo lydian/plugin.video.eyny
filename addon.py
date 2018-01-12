@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import codecs
 import json
+import logging
 import os
 import sys
 import urlparse
@@ -205,6 +206,9 @@ class EynyGui(object):
             ret = int(xbmcgui.Dialog().select(
                 'Please choose quality',
                 map(str, play_info['sizes'])))
+            logging.warning('SELECTED: {}'.format(ret))
+            if ret < 0 or ret >= len(play_info['sizes']):
+                return
             return self.play_video(vid, play_info['sizes'][ret])
 
         play_item = xbmcgui.ListItem(
