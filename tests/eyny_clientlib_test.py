@@ -36,7 +36,8 @@ class TestEynyForum(object):
     def test_list_filters(Self, forum):
         result = forum.list_filters()
         assert len(result['categories']) > 0
-        assert u'電影' in [cat['name'] for cat in result['categories']]
+        categories = [cat['name'] for cat in result['categories']]
+        assert "Other" in categories
         assert len(result['mod']) > 0
 
     @pytest.mark.parametrize('search_string', (
