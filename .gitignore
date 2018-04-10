@@ -3,3 +3,4 @@
 .tox/
 .cache/
 virtualenv_run/
+.pytest_cache/
