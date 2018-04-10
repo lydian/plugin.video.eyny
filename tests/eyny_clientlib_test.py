@@ -9,7 +9,7 @@ from resources.lib.eyny_clientlib import EynyForum
 
 class TestEynyForum(object):
 
-    @pytest.fixture
+    @pytest.fixture(scope='session')
     def forum(self):
         return EynyForum('user', 'test_password')
 
@@ -47,7 +47,7 @@ class TestEynyForum(object):
         result = forum.search_video(search_string)
         self._verify_valid_output(result)
 
-    @pytest.fixture(params=[20, 55, 3])
+    @pytest.fixture(params=[20, 3])
     def cid(self, request):
         return request.param
 
