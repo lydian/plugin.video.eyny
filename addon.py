@@ -77,13 +77,6 @@ class EynyGui(object):
                 url=self._build_url('list', cid=category['cid']),
                 listitem=li,
                 isFolder=True)
-        for orderby in filters['mod']:
-            li = xbmcgui.ListItem(orderby['name'])
-            xbmcplugin.addDirectoryItem(
-                handle=self.addon_handle,
-                url=self._build_url('list', orderby=orderby['orderby']),
-                listitem=li,
-                isFolder=True)
         xbmcplugin.endOfDirectory(addon_handle)
 
     def _add_page_item(self, page, last_page, url_mode, **url_kwargs):
@@ -96,7 +89,10 @@ class EynyGui(object):
 
     def _add_video_items(self, videos, current_url):
         for video in videos:
-            li = xbmcgui.ListItem(label=video['title'])
+            title = video['title']
+            if 'quality' in video:
+                title = '({}p) '.format(video['quality']) + title
+            li = xbmcgui.ListItem(label=title)
             li.setProperty('IsPlayable', 'true')
             image_url = self.build_request_url(
                 video['image'], current_url)
@@ -195,7 +191,8 @@ class EynyGui(object):
 
     def play_video(self, vid, size=None):
         try:
-            play_info = self.eyny.get_video_link(vid, size)
+            with self.eyny.login():
+                play_info = self.eyny.get_video_link(vid, size)
         except ValueError as e:
             xbmcgui.Dialog().notification(
                 heading='Error',
@@ -206,7 +203,8 @@ class EynyGui(object):
             ret = int(xbmcgui.Dialog().select(
                 'Please choose quality',
                 map(str, play_info['sizes'])))
-            logging.warning('SELECTED: {}'.format(ret))
+            logging.warning(
+                'SELECTED: {} - {}'.format(ret, play_info['sizes'][ret]))
             if ret < 0 or ret >= len(play_info['sizes']):
                 return
             return self.play_video(vid, play_info['sizes'][ret])

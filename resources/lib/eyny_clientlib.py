@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 import logging
+import os
 import random
 import re
 import urlparse
+from contextlib import contextmanager
 
 import requests
 from bs4 import BeautifulSoup
@@ -15,13 +17,14 @@ class EynyForum(object):
         self.password = password
         self.base_url = random.choice(['video.eyny.com'])
         self.session = requests.Session()
-        self.is_login = False
 
-    def _visit_and_parse(self, path, method='get', **kwargs):
+    def _visit_and_parse(
+        self, path, method='get', get_info=False, **kwargs
+    ):
         if not path.startswith('http'):
-            if not path.startswith('/'):
-                path = '/' + path
-            path = 'http://' + self.base_url + path
+            if path.startswith('/'):
+                path = path[1:]
+            path = 'http://' + os.path.join(self.base_url, path)
         user_agent = (
             "Mozilla/5.0 (Windows NT 5.1) "
             "AppleWebKit/537.36 (KHTML, like Gecko) "
@@ -29,22 +32,26 @@ class EynyForum(object):
 
         header = {
             "User-Agent": user_agent,
+            'Accept-Encoding': 'gzip, deflate',
+            "Accept-Language":
+                'zh-TW,zh;q=0.9,en-US;q=0.8,en;q=0.7,zh-CN;q=0.6',
             "Host": self.base_url
         }
-
         request = self.session.__getattribute__(method)(
             path, headers=header, **kwargs
         )
         html = request.text
         soup = BeautifulSoup(html, 'html5lib')
         having_info = soup.find('div', id='messagetext')
-        if having_info:
-            message = having_info.p.contents[0]
+        message = having_info.p.contents[0] if having_info else None
+        if not get_info and message:
             raise ValueError(message)
+        if get_info:
+            return request.url, message
         return request.url, soup
 
-    def login(self):
-        if self.is_login:
+    def _login(self):
+        if self.is_login():
             return True
         _, soup = self._visit_and_parse(
             '/member.php',
@@ -90,27 +97,52 @@ class EynyForum(object):
                 'inajax': 1
             }
         )
-        if re.search(u'.*succeedhandle_login.*', str(soup)):
-            self.is_login = True
-        else:
-            self.is_login = False
-        return self.is_login
+        return re.search(u'.*succeedhandle_login.*', str(soup)) is not None
+
+    @contextmanager
+    def login(self):
+        is_login = False
+        try:
+            is_login = self._login()
+        except ValueError as e:
+            if (
+                e.message.strip() ==
+                u'由於你的帳號從多處登入，已經被強制登出。'
+            ):
+                is_login = self._login()
+            if not is_login:
+                raise e
+        yield
+        self.logout()
+
+    def is_login(self):
+        _, soup = self._visit_and_parse('/')
+        logout_button = soup.find(lambda elem: (
+            elem.name == 'a'
+            and re.search('action=logout', elem.attrs.get('href', ''))
+        ))
+        return logout_button is not None
+
+    def logout(self):
+        _, soup = self._visit_and_parse('/')
+        logout_button = soup.find(lambda elem: (
+            elem.name == 'a'
+            and re.search('action=logout', elem.attrs.get('href', ''))
+        ))
+        _, message = self._visit_and_parse(
+            logout_button.attrs['href'], get_info=True)
+        logging.warning(message)
 
     def get_video_link(self, vid, size):
-        if not self.is_login:
-            if not self.login():
-                raise ValueError('Failed to login')
-
         current_url, soup = self._visit_and_parse(
-                '/video.php',
-                params={'mod': 'video', 'vid': vid, 'size': size})
+                'watch?v={}&size={}'.format(vid, size))
         title = soup.find('title').string.replace(u'-  伊莉影片區', '').strip()
 
         sizes = []
         for elem in soup.find_all(lambda tag: (
             tag.name == 'a'
             and re.search(
-                'mod=video&vid=%s&size=\d+' % vid,
+                'watch\?v=%s&size=\d+' % vid,
                 tag.attrs.get('href', '')))
         ):
             sizes.append(int(elem.string))
@@ -130,35 +162,37 @@ class EynyForum(object):
 
     def parse_filters(self, soup):
         first_table = soup.find('table', class_='block').find('tr')
-        second_table = first_table.find_next_sibling('tr')
+
+        def index_parser(url):
+            return dict(urlparse.parse_qsl(
+                urlparse.urlsplit(url).query)).get('cid')
+
+        def channel_parser(url):
+            return re.search('channel/(?P<cid>[^&]+)', url).group('cid')
 
         main_category = first_table.find('table')
         categories = [{
             'name': element.string,
-            'cid': dict(urlparse.parse_qsl(
-                urlparse.urlsplit(element.attrs['href']).query
-            ))['cid']
+            'cid': (
+                index_parser(element.attrs['href']) or
+                channel_parser(element.attrs['href'])
+            )
         } for element in main_category.find_all('a')]
 
         if len(first_table.find_all('table')) > 1:
             sub_categories = [{
                 'name': elem.string,
-                'cid': dict(urlparse.parse_qsl(
-                    urlparse.urlsplit(elem.attrs['href']).query
-                ))['cid']
-            }for elem in first_table.find_all('table')[1].find_all('a')]
+                'cid': (
+                    index_parser(elem.attrs['href'])
+                    or channel_parser(elem.attrs['href'])
+                )
+            } for elem in first_table.find_all('table')[1].find_all('a')]
         else:
             sub_categories = []
 
-        orderbys = [{
-            'name': element.string,
-            'orderby': re.search(
-                'mod=([^&]+)', element.attrs['href']).group(1)
-            } for element in second_table.find_all('a')]
         return {
             'categories': categories,
             'sub_categories': sub_categories,
-            'mod': orderbys
         }
 
     def list_filters(self):
@@ -172,10 +206,10 @@ class EynyForum(object):
                 if element.find('a') is None:
                     continue
                 link = element.find('a').attrs['href']
-                match = re.search('vid=(?P<vid>[^&]+)', link)
+                match = re.search('watch\?v=(?P<vid>[^&]+)', link)
                 if match is None:
                     continue
-                vid = re.search('vid=(?P<vid>[^&]+)', link).group('vid')
+                vid = match.group('vid')
                 image = element.find('img').attrs['src']
                 title = element.find_all('p')[0].find('a').string
                 quality = int(element.find_all('p')[2].find(
@@ -268,7 +302,7 @@ class EynyForum(object):
 
         video_table = soup.find(lambda tag: (
             tag.name == 'a'
-            and re.search('mod=video&vid=', tag.attrs.get('href', '')))
+            and re.search('watch\?v=', tag.attrs.get('href', '')))
         ).find_parent('table')
         pages_row = video_table.find('tr')
         videos_rows = list(pages_row.find_next_siblings('tr'))[:-2]

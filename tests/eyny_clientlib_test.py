@@ -29,16 +29,15 @@ class TestEynyForum(object):
     def test_login(self):
         user_name, password = os.environ['EYNY_STRING'].split(':')
         forum = EynyForum(user_name, password)
-        assert not forum.is_login
-        assert forum.login()
-        assert forum.is_login
+        with forum.login():
+            assert forum.is_login()
+        assert not forum.is_login()
 
     def test_list_filters(Self, forum):
         result = forum.list_filters()
         assert len(result['categories']) > 0
         categories = [cat['name'] for cat in result['categories']]
-        assert "Other" in categories
-        assert len(result['mod']) > 0
+        assert u"其他" in categories
 
     @pytest.mark.parametrize('search_string', (
         'test', u'三國'
@@ -47,7 +46,7 @@ class TestEynyForum(object):
         result = forum.search_video(search_string)
         self._verify_valid_output(result)
 
-    @pytest.fixture(params=[20, 3])
+    @pytest.fixture(params=[6, 3])
     def cid(self, request):
         return request.param
 
@@ -64,9 +63,13 @@ class TestEynyForum(object):
         self._verify_valid_output(result, page)
 
     @pytest.fixture
-    def vid(self, forum, cid, mod, page):
-        videos = forum.list_videos(cid, mod, page)
-        return random.choice(videos['videos'])['vid']
+    def vid(self, forum):
+        cid = 69
+        videos = filter(
+            lambda video: video.get('quality') >= 360,
+            forum.list_videos(cid, 'index', None)['videos']
+        )
+        return random.choice(videos)['vid']
 
     @pytest.mark.skipif(
         os.environ.get('EYNY_STRING', None) is None,
@@ -74,5 +77,6 @@ class TestEynyForum(object):
     def test_get_video_link(self, forum, vid):
         user_name, password = os.environ['EYNY_STRING'].split(':')
         forum = EynyForum(user_name, password)
-        result = forum.get_video_link(vid, None)
+        with forum.login():
+            result = forum.get_video_link(vid, 720)
         assert result['video'].startswith('http')

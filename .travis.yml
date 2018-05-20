@@ -1,6 +1,9 @@
 sudo: false
 language: python
 python:
-  - "2.7"
+- '2.7'
 install: pip install tox-travis
 script: tox
+notifications:
+  slack:
+    secure: EHlr8e/jiMcIwrRVCVj5HaMMpCpcgvoZIE/SV59MUz0TuOQQgy+kn4+ACyNCvZLXrZzxdW4RtQ+jvn4WA8bU19Pvkt4xPIbAG3wjyt6km3fqQUNCjdo7KCZ/MaoWNAeVftu0oNcbccB0uZMTXsQRhqgaLyhCsi/RC1gcI/swDy7DrShRNAd58ISBuYq0x0bTpn4kKldHiHwkYbJegkCRtz44CU9mJBHy+GaHMpLXbRNB0SH8wqfmzUPpB2vp63auPF/bYaz0wCGOWyywicNET3RYfNoPVsPINKWCEIuvUFRpVRhXFUJ0Arq8qemURJjTJrR1LpO2BIrmRAVxAlj0qJAGjRRPU3/Yiuip5Uo5wNBwInUM8ahE2AKWWEmb6Pk5hy6q4sqGQ+UTb6ma8wdF8SDjytLujEyYRuXyf6wyJK/5RazGQJp9+aaBqF/orSZ6uCepwYO5S7i3qzOUiTir4vJkZFGmih6RKyQTAeVl5LTAiGnJJnEKi5lQxwKbfwPPr0jlQcjf14sio1OlxEdvxnG/IHMdb0/4fdL7zZq40yuIb5BMzTMYDAMVmOQBPlcHvSh5Z6vhZ29z1aD+YOkdEsyVTEkJxDIBMQA2FTmWqn+FAoiCGztLfAhCbVo66IFQoxOQ3QHaM2xTKghFrSBaXFOXKSJSBYngsXrRrYbm4PY=
