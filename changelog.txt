@@ -12,3 +12,5 @@
 1. Fix parsing issue
 2. Record search log for faster query next time.
 3. Fix the issue that resolution selection failed
+# v .4.3
+1. Fix search parsing

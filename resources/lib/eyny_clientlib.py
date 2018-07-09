@@ -257,20 +257,15 @@ class EynyForum(object):
         return 1
 
     def search_video(self, search_txt, day=None, orderby=None, cid=0, page=1):
-        path = '/index.php'
+        search_txt = re.sub(' +', '-', search_txt)
+        path = '/tag/' + search_txt
         params = {
-            'mod': 'search',
-            'cid': cid,
-            'srchtxt': search_txt,
-            'date': day or '',
-            'orderby': orderby or '',
             'page': page
         }
         current_url, soup = self._visit_and_parse(path, params=params)
         logging.warning(current_url)
-        video_table = soup.find_all('table', class_='block')[2]
+        video_table = soup.find_all('table', class_='block')[3]
         pages_row = video_table.find('tr')
-
         videos_rows = list(pages_row.find_next_siblings('tr'))[:-2]
         return {
             'videos': self._get_video_list(videos_rows),
