@@ -212,9 +212,14 @@ class EynyForum(object):
                 vid = match.group('vid')
                 image = element.find('img').attrs['src']
                 title = element.find_all('p')[0].find('a').string
-                quality = int(element.find_all('p')[2].find(
-                    lambda e: e.name == 'font' and re.match('^\d+$', e.string)
-                ).string)
+                try:
+                    quality = int(element.find_all('p')[2].find(
+                        lambda e: (
+                            e.name == 'font' and re.match('^\d+$', e.string)
+                        )
+                    ).string)
+                except Exception:
+                    quality = 180
 
                 duration = element.find('a').div.div.string
 
