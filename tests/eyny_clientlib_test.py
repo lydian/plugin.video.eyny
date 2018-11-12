@@ -7,11 +7,16 @@ import pytest
 from resources.lib.eyny_clientlib import EynyForum
 
 
+@pytest.mark.skipif(
+    os.environ.get('EYNY_STRING', None) is None,
+    reason="requires setting EYNY_STRING in environment variable")
 class TestEynyForum(object):
 
     @pytest.fixture(scope='session')
     def forum(self):
-        return EynyForum('user', 'test_password')
+        user_name, password = os.environ['EYNY_STRING'].split(':')
+        forum = EynyForum(user_name, password)
+        return forum
 
     def _verify_valid_output(self, result, expected_page=1):
         assert len(result['videos']) > 0
@@ -23,15 +28,8 @@ class TestEynyForum(object):
             for col in ['vid', 'image', 'title', 'quality', 'duration']
         )
 
-    @pytest.mark.skipif(
-        os.environ.get('EYNY_STRING', None) is None,
-        reason="requires setting EYNY_STRING in environment variable")
-    def test_login(self):
-        user_name, password = os.environ['EYNY_STRING'].split(':')
-        forum = EynyForum(user_name, password)
-        with forum.login():
-            assert forum.is_login()
-        assert not forum.is_login()
+    def test_login(self, forum):
+        assert forum.is_login()
 
     def test_list_filters(Self, forum):
         result = forum.list_filters()
@@ -71,12 +69,6 @@ class TestEynyForum(object):
         )
         return random.choice(videos)['vid']
 
-    @pytest.mark.skipif(
-        os.environ.get('EYNY_STRING', None) is None,
-        reason="requires setting EYNY_STRING in environment variable")
     def test_get_video_link(self, forum, vid):
-        user_name, password = os.environ['EYNY_STRING'].split(':')
-        forum = EynyForum(user_name, password)
-        with forum.login():
-            result = forum.get_video_link(vid, 720)
+        result = forum.get_video_link(vid, 360)
         assert result['video'].startswith('http')

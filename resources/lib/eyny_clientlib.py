@@ -4,7 +4,6 @@ import os
 import random
 import re
 import urlparse
-from contextlib import contextmanager
 
 import requests
 from bs4 import BeautifulSoup
@@ -17,6 +16,10 @@ class EynyForum(object):
         self.password = password
         self.base_url = random.choice(['video.eyny.com'])
         self.session = requests.Session()
+        self.login()
+
+    def __del__(self):
+        self.logout()
 
     def _visit_and_parse(
         self, path, method='get', get_info=False, **kwargs
@@ -62,7 +65,7 @@ class EynyForum(object):
             })
         login_hash = soup.find(
             "div",
-            id=re.compile('^main_messaqge_')
+            id=re.compile(r'^main_messaqge_')
         )['id'].replace('main_messaqge_', '')
         form_hash = soup.find(
             'input',
@@ -99,7 +102,6 @@ class EynyForum(object):
         )
         return re.search(u'.*succeedhandle_login.*', str(soup)) is not None
 
-    @contextmanager
     def login(self):
         is_login = False
         try:
@@ -112,8 +114,6 @@ class EynyForum(object):
                 is_login = self._login()
             if not is_login:
                 raise e
-        yield
-        self.logout()
 
     def is_login(self):
         _, soup = self._visit_and_parse('/')
@@ -142,7 +142,7 @@ class EynyForum(object):
         for elem in soup.find_all(lambda tag: (
             tag.name == 'a'
             and re.search(
-                'watch\?v=%s&size=\d+' % vid,
+                r'watch\?v=.*\&size=\d+',
                 tag.attrs.get('href', '')))
         ):
             sizes.append(int(elem.string))
@@ -168,7 +168,7 @@ class EynyForum(object):
                 urlparse.urlsplit(url).query)).get('cid')
 
         def channel_parser(url):
-            return re.search('channel/(?P<cid>[^&]+)', url).group('cid')
+            return re.search(r'channel/(?P<cid>[^&]+)', url).group('cid')
 
         main_category = first_table.find('table')
         categories = [{
@@ -206,7 +206,7 @@ class EynyForum(object):
                 if element.find('a') is None:
                     continue
                 link = element.find('a').attrs['href']
-                match = re.search('watch\?v=(?P<vid>[^&]+)', link)
+                match = re.search(r'watch\?v=(?P<vid>[^&]+)', link)
                 if match is None:
                     continue
                 vid = match.group('vid')
@@ -215,7 +215,7 @@ class EynyForum(object):
                 try:
                     quality = int(element.find_all('p')[2].find(
                         lambda e: (
-                            e.name == 'font' and re.match('^\d+$', e.string)
+                            e.name == 'font' and re.match(r'^\d+$', e.string)
                         )
                     ).string)
                 except Exception:
@@ -249,7 +249,7 @@ class EynyForum(object):
         last_page = pages.find('a', class_='last')
         if last_page is not None:
             last_page = re.search(
-                '(?P<last_page>\d+)', last_page.string).group('last_page')
+                r'(?P<last_page>\d+)', last_page.string).group('last_page')
             if last_page is not None:
                 return int(last_page)
         last_page = [
@@ -302,7 +302,7 @@ class EynyForum(object):
 
         video_table = soup.find(lambda tag: (
             tag.name == 'a'
-            and re.search('watch\?v=', tag.attrs.get('href', '')))
+            and re.search(r'watch\?v=', tag.attrs.get('href', '')))
         ).find_parent('table')
         pages_row = video_table.find('tr')
         videos_rows = list(pages_row.find_next_siblings('tr'))[:-2]

@@ -14,3 +14,5 @@
 3. Fix the issue that resolution selection failed
 # v .4.3
 1. Fix search parsing
+# v .4.5
+1. the site now require login to see contents

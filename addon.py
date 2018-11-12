@@ -23,7 +23,6 @@ class EynyGui(object):
         self.addon_handle = addon_handle
         self.eyny = EynyForum(
             addon.getSetting('username'), addon.getSetting('password'))
-        self.is_login = self.eyny.login()
         self.search_history_file = os.path.join(
             xbmc.translatePath(addon.getAddonInfo('profile')),
             'search_history.json')
@@ -190,14 +189,7 @@ class EynyGui(object):
         xbmcplugin.endOfDirectory(self.addon_handle)
 
     def play_video(self, vid, size=None):
-        try:
-            with self.eyny.login():
-                play_info = self.eyny.get_video_link(vid, size)
-        except ValueError as e:
-            xbmcgui.Dialog().notification(
-                heading='Error',
-                message=unicode(e))
-            return
+        play_info = self.eyny.get_video_link(vid, size)
 
         if size is None and len(play_info['sizes']) > 1:
             ret = int(xbmcgui.Dialog().select(
