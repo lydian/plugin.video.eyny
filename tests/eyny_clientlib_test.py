@@ -44,28 +44,28 @@ class TestEynyForum(object):
         result = forum.search_video(search_string)
         self._verify_valid_output(result)
 
-    @pytest.fixture(params=[6, 3])
+    # 生活 飲食
+    @pytest.fixture(params=['UCVoegm3b0-', 'UClwzxVEep8'])
     def cid(self, request):
         return request.param
 
-    @pytest.fixture(params=['channel', 'index'])
-    def mod(self, request):
-        return request.param
+    # @pytest.fixture(params=['channel', 'index'])
+    # def mod(self, request):
+    #    return request.param
 
     @pytest.fixture(params=[1, 2])
     def page(self, request):
         return request.param
 
-    def test_list_videos(self, forum, cid, mod, page):
-        result = forum.list_videos(cid=cid, page=page, mod=mod)
+    def test_list_videos(self, forum, cid, page):
+        result = forum.list_videos(cid=cid, page=page)
         self._verify_valid_output(result, page)
 
     @pytest.fixture
-    def vid(self, forum):
-        cid = 69
+    def vid(self, cid, forum):
         videos = filter(
             lambda video: video.get('quality') >= 360,
-            forum.list_videos(cid, 'index', None)['videos']
+            forum.list_videos(cid, None)['videos']
         )
         return random.choice(videos)['vid']
 

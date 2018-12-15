@@ -3,7 +3,6 @@ import logging
 import os
 import random
 import re
-import urlparse
 
 import requests
 from bs4 import BeautifulSoup
@@ -161,11 +160,8 @@ class EynyForum(object):
         }
 
     def parse_filters(self, soup):
-        first_table = soup.find('table', class_='block').find('tr')
-
-        def index_parser(url):
-            return dict(urlparse.parse_qsl(
-                urlparse.urlsplit(url).query)).get('cid')
+        tables = soup.find('table', class_='block').find_all('tr')
+        first_table = tables[0]
 
         def channel_parser(url):
             return re.search(r'channel/(?P<cid>[^&]+)', url).group('cid')
@@ -173,20 +169,17 @@ class EynyForum(object):
         main_category = first_table.find('table')
         categories = [{
             'name': element.string,
-            'cid': (
-                index_parser(element.attrs['href']) or
-                channel_parser(element.attrs['href'])
-            )
+            'cid': channel_parser(element.attrs['href'])
         } for element in main_category.find_all('a')]
 
-        if len(first_table.find_all('table')) > 1:
-            sub_categories = [{
-                'name': elem.string,
-                'cid': (
-                    index_parser(elem.attrs['href'])
-                    or channel_parser(elem.attrs['href'])
-                )
-            } for elem in first_table.find_all('table')[1].find_all('a')]
+        if len(tables) > 3:
+            sub_categories = [
+                {
+                    'name': elem.string,
+                    'cid': channel_parser(elem.attrs['href'])
+                }
+                for elem in tables[2].find_all('a')
+            ]
         else:
             sub_categories = []
 
@@ -279,16 +272,10 @@ class EynyForum(object):
             'current_url': current_url
         }
 
-    def list_videos(self, cid=None, page=1, mod='channel'):
-        path = '/index.php'
-        params = {'page': page}
-        if cid is not None:
-            params['cid'] = cid
-        if mod is not None:
-            params['mod'] = mod
+    def list_videos(self, cid=None, page=1):
+        path = '/channel/' + cid + '/videos&page=' + str(page)
 
-        current_url, soup = self._visit_and_parse(path, params=params)
-
+        current_url, soup = self._visit_and_parse(path)
         validate_form = soup.find(lambda tag: (
             tag.name == 'form'
             and tag.find('input', attrs={'value': re.compile('.*Yes.*')})
@@ -298,14 +285,13 @@ class EynyForum(object):
                 (input_.attrs['name'], input_.attrs['value'])
                 for input_ in validate_form.find_all('input'))
             current_url, soup = self._visit_and_parse(
-                path, params=params, method='post', data=data)
-
+                path, method='post', data=data)
         video_table = soup.find(lambda tag: (
             tag.name == 'a'
             and re.search(r'watch\?v=', tag.attrs.get('href', '')))
         ).find_parent('table')
         pages_row = video_table.find('tr')
-        videos_rows = list(pages_row.find_next_siblings('tr'))[:-2]
+        videos_rows = list(pages_row.find_next_siblings('tr'))[:-1]
 
         videos = self._get_video_list(videos_rows)
 

@@ -35,7 +35,6 @@ class EynyGui(object):
             self.list_video(
                 cid=args.get('cid', None),
                 page=int(args.get('page', 1)),
-                orderby=args.get('orderby')
             )
         if mode == 'video':
             self.play_video(args['vid'])
@@ -68,15 +67,17 @@ class EynyGui(object):
                 url=self._build_url('search'),
                 listitem=xbmcgui.ListItem('Search'),
                 isFolder=True)
+        self._add_category_item(filters['categories'])
+        xbmcplugin.endOfDirectory(addon_handle)
 
-        for category in filters['categories']:
+    def _add_category_item(self, categories):
+        for category in categories:
             li = xbmcgui.ListItem(category['name'])
             xbmcplugin.addDirectoryItem(
                 handle=self.addon_handle,
                 url=self._build_url('list', cid=category['cid']),
                 listitem=li,
                 isFolder=True)
-        xbmcplugin.endOfDirectory(addon_handle)
 
     def _add_page_item(self, page, last_page, url_mode, **url_kwargs):
         xbmcplugin.addDirectoryItem(
@@ -113,21 +114,22 @@ class EynyGui(object):
                 listitem=li,
                 isFolder=False)
 
-    def list_video(self, cid=None, page=1, orderby='channel'):
+    def list_video(self, cid=None, page=1):
         try:
-            result = self.eyny.list_videos(cid=cid, page=page, mod=orderby)
+            result = self.eyny.list_videos(cid=cid, page=page)
         except ValueError as e:
             xbmcgui.Dialog().ok(
                 heading='Error',
                 line1=unicode(e).encode('utf-8'))
             return
 
+        self._add_category_item(result['category']['sub_categories'])
         self._add_video_items(result['videos'], result['current_url'])
         if page < int(result['last_page']):
             self._add_page_item(
                 page+1,
                 result['last_page'],
-                'list', orderby=orderby, cid=cid)
+                'list', cid=cid)
         xbmcplugin.endOfDirectory(self.addon_handle)
 
     def update_search_history(self, search_string):

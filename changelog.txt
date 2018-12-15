@@ -16,3 +16,6 @@
 1. Fix search parsing
 # v .4.5
 1. the site now require login to see contents
+# v.4.6
+1. fix list videos from different category
+2. select from subcategory
