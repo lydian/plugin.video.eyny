@@ -192,47 +192,56 @@ class EynyForum(object):
         _, soup = self._visit_and_parse('/')
         return self.parse_filters(soup)
 
-    def _get_video_list(self, videos_rows):
-        videos = []
-        for videos_row in videos_rows:
-            for element in videos_row.find_all('td'):
+    def _get_item_list(self, items_rows, item_type='video'):
+        if item_type == 'playlist':
+            pattern = r'playlist\?list=(?P<id>[^&]+)'
+        else:  # item_type == 'video'
+            pattern = r'watch\?v=(?P<id>[^&]+)'
+        items = []
+        for row in items_rows:
+            for element in row.find_all('td'):
                 if element.find('a') is None:
                     continue
                 link = element.find('a').attrs['href']
-                match = re.search(r'watch\?v=(?P<vid>[^&]+)', link)
+                match = re.search(pattern, link)
                 if match is None:
                     continue
-                vid = match.group('vid')
                 image = element.find('img').attrs['src']
                 title = element.find_all('p')[0].find('a').string
-                try:
-                    quality = int(element.find_all('p')[2].find(
-                        lambda e: (
-                            e.name == 'font' and re.match(r'^\d+$', e.string)
-                        )
-                    ).string)
-                except Exception:
-                    quality = 180
+                if item_type == 'video':
+                    try:
+                        quality = int(element.find_all('p')[2].find(
+                            lambda e: (
+                                e.name == 'font' and
+                                re.match(r'^\d+$', e.string)
+                            )
+                        ).string)
+                    except Exception:
+                        quality = 180
 
-                duration = element.find('a').div.div.string
+                    duration = element.find('a').div.div.string
 
-                def duration_to_seconds(duration_str):
-                    t = duration_str.split(':')
-                    t.reverse()
-                    duration = 0
-                    for idx, val in enumerate(t):
-                        duration += int(val) * 60 ** idx
-                    return duration
-                duration_in_seconds = duration_to_seconds(duration)
+                    def duration_to_seconds(duration_str):
+                        t = duration_str.split(':')
+                        t.reverse()
+                        duration = 0
+                        for idx, val in enumerate(t):
+                            duration += int(val) * 60 ** idx
+                        return duration
+                    duration_in_seconds = duration_to_seconds(duration)
+                else:
+                    quality = None
+                    duration_in_seconds = None
 
-                videos.append({
-                    'vid': vid,
+                items.append({
+                    'type': item_type,
+                    'id': match.group('id'),
                     'image': image,
                     'title': title,
                     'quality': quality,
                     'duration': duration_in_seconds
                 })
-        return videos
+        return items
 
     def _parse_last_page(self, pages_row):
         pages = pages_row.find('div', class_="pg")
@@ -261,15 +270,54 @@ class EynyForum(object):
             'page': page
         }
         current_url, soup = self._visit_and_parse(path, params=params)
-        logging.warning(current_url)
-        video_table = soup.find_all('table', class_='block')[3]
-        pages_row = video_table.find('tr')
-        videos_rows = list(pages_row.find_next_siblings('tr'))[:-2]
+        try:
+            video_table = soup.find_all('table', class_='block')[3]
+            pages_row = video_table.find('tr')
+            videos_rows = list(pages_row.find_next_siblings('tr'))[:-1]
+        except:
+            return None
         return {
-            'videos': self._get_video_list(videos_rows),
+            'items': self._get_item_list(videos_rows),
             'current_page': page,
             'last_page': self._parse_last_page(pages_row),
             'current_url': current_url
+        }
+
+    def search_user_channel(self, search_type, search_txt, page=1,
+                            playlist=False):
+        path = '/' + search_type + '/' + search_txt
+        params = {}
+        if page > 1:
+            params['page'] = page
+        if playlist:
+            params['type'] = 'playlist'
+        current_url, soup = self._visit_and_parse(path, params=params)
+        tables = soup.find_all('table', class_='block')
+        try:
+            username = tables[0].find('span', id='username').a.contents[0]
+        except:
+            return None
+        if not username:
+            return None
+        item_table = tables[1] if len(tables) > 1 else None
+        pages_row = item_table.find('tr')
+        items_rows = list(pages_row.find_next_siblings('tr'))[:-1]
+        has_playlist = False
+        if not playlist:
+            try:
+                playlist_table = tables[2] if len(tables) > 2 else None
+                title = playlist_table.find('tr').td.contents[0]
+                has_playlist = title == u'Playlist' or title == u'專輯'
+            except:
+                pass
+        return {
+            'username': username,
+            'items': self._get_item_list(
+                items_rows, 'playlist' if playlist else'video'),
+            'current_page': page,
+            'last_page': self._parse_last_page(pages_row),
+            'current_url': current_url,
+            'has_playlist': has_playlist
         }
 
     def list_videos(self, cid=None, page=1):
@@ -293,12 +341,21 @@ class EynyForum(object):
         pages_row = video_table.find('tr')
         videos_rows = list(pages_row.find_next_siblings('tr'))[:-1]
 
-        videos = self._get_video_list(videos_rows)
-
         return {
             'category': self.parse_filters(soup),
-            'videos': videos,
+            'items': self._get_item_list(videos_rows),
             'current_page': page,
             'last_page': self._parse_last_page(pages_row),
+            'current_url': current_url
+        }
+
+    def list_videos_in_playlist(self, pid):
+        path = '/playlist?list=' + pid
+        current_url, soup = self._visit_and_parse(path)
+        video_table = soup.find_all('table', class_='block')[2]
+        pages_row = video_table.find('tr')
+        videos_rows = list(pages_row.find_next_siblings('tr'))[:-1]
+        return {
+            'items': self._get_item_list(videos_rows),
             'current_url': current_url
         }

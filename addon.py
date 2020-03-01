@@ -19,6 +19,7 @@ class EynyGui(object):
 
     def __init__(self, base_url, addon_handle):
         addon = xbmcaddon.Addon()
+        self.addon_path = addon.getAddonInfo('path')
         self.base_url = base_url
         self.addon_handle = addon_handle
         self.eyny = EynyForum(
@@ -31,6 +32,8 @@ class EynyGui(object):
         mode = args.get('mode', None)
         if mode is None:
             self.main()
+        if mode == 'category':
+            self.list_categories()
         if mode == 'list':
             self.list_video(
                 cid=args.get('cid', None),
@@ -38,12 +41,23 @@ class EynyGui(object):
             )
         if mode == 'video':
             self.play_video(args['vid'])
-
         if mode == 'search':
-            self.search_video(
+            self.search(
                 new_search=args.get('new_search', False),
                 search_string=args.get('search_string'),
-                page=int(args.get('page', 1)))
+                page=int(args.get('page', 1)),
+                search_by=args.get('search_by')
+            )
+        if mode == 'playlist':
+            self.list_playlist(
+                search_by=args.get('search_by'),
+                search_string=args.get('search_string'),
+                page=int(args.get('page', 1))
+            )
+        if mode == 'show_playlist':
+            self.show_playlist(
+                pid=args.get('pid')
+            )
 
     def _build_url(self, mode, **kwargs):
         query = kwargs
@@ -60,32 +74,26 @@ class EynyGui(object):
             'Referer': referer})
         return added_header
 
-    def main(self):
-        filters = self.eyny.list_filters()
+    def _add_folder(self, item_label, mode, icon=None, **url_kwargs):
         xbmcplugin.addDirectoryItem(
                 handle=self.addon_handle,
-                url=self._build_url('search'),
-                listitem=xbmcgui.ListItem('Search'),
+                url=self._build_url(mode, **url_kwargs),
+                listitem=xbmcgui.ListItem(item_label, iconImage=icon),
                 isFolder=True)
-        self._add_category_item(filters['categories'])
-        xbmcplugin.endOfDirectory(addon_handle)
+
+    def main(self):
+        search_icon = self._get_icon('search.png')
+        self._add_folder('Search', 'search', icon=search_icon)
+        self._add_folder('Browse by categories', 'category')
+        xbmcplugin.endOfDirectory(self.addon_handle)
 
     def _add_category_item(self, categories):
         for category in categories:
-            li = xbmcgui.ListItem(category['name'])
-            xbmcplugin.addDirectoryItem(
-                handle=self.addon_handle,
-                url=self._build_url('list', cid=category['cid']),
-                listitem=li,
-                isFolder=True)
+            self._add_folder(category['name'], 'list', cid=category['cid'])
 
     def _add_page_item(self, page, last_page, url_mode, **url_kwargs):
-        xbmcplugin.addDirectoryItem(
-            handle=self.addon_handle,
-            url=self._build_url(url_mode, page=page, **url_kwargs),
-            listitem=xbmcgui.ListItem(
-                '~~ Go to Page {}/{} ~~'.format(page, last_page)),
-            isFolder=True)
+        self._add_folder('~~ Go to Page {}/{} ~~'.format(page, last_page),
+                         url_mode, page=page, **url_kwargs)
 
     def _add_video_items(self, videos, current_url):
         for video in videos:
@@ -110,9 +118,38 @@ class EynyGui(object):
             li.setProperty('VideoResolution', str(video['quality']))
             xbmcplugin.addDirectoryItem(
                 handle=self.addon_handle,
-                url=self._build_url('video', vid=video['vid']),
+                url=self._build_url('video', vid=video['id']),
                 listitem=li,
                 isFolder=False)
+
+    def _add_playlist_items(self, playlists, current_url):
+        for playlist in playlists:
+            title = playlist['title']
+            li = xbmcgui.ListItem(label=title)
+            image_url = self.build_request_url(
+                playlist['image'], current_url)
+            li.setArt({
+                'fanart': image_url,
+                'icon': image_url,
+                'thumb': image_url
+            })
+            xbmcplugin.addDirectoryItem(
+                handle=self.addon_handle,
+                url=self._build_url('show_playlist', pid=playlist['id']),
+                listitem=li,
+                isFolder=True)
+
+    def _get_icon(self, filename):
+        return os.path.join(
+            self.addon_path,
+            'resources',
+            'icon',
+            filename)
+
+    def list_categories(self):
+        filters = self.eyny.list_filters()
+        self._add_category_item(filters['categories'])
+        xbmcplugin.endOfDirectory(self.addon_handle)
 
     def list_video(self, cid=None, page=1):
         try:
@@ -123,8 +160,10 @@ class EynyGui(object):
                 line1=unicode(e).encode('utf-8'))
             return
 
-        self._add_category_item(result['category']['sub_categories'])
-        self._add_video_items(result['videos'], result['current_url'])
+        sub_cids = [sub['cid'] for sub in result['category']['sub_categories']]
+        if cid not in sub_cids:
+            self._add_category_item(result['category']['sub_categories'])
+        self._add_video_items(result['items'], result['current_url'])
         if page < int(result['last_page']):
             self._add_page_item(
                 page+1,
@@ -132,12 +171,15 @@ class EynyGui(object):
                 'list', cid=cid)
         xbmcplugin.endOfDirectory(self.addon_handle)
 
-    def update_search_history(self, search_string):
+    def update_search_history(self, search_entry):
         search_list = self.get_search_history()
-        search_string = search_string.decode('utf-8')
-        if search_string in search_list:
-            search_list.remove(search_string)
-        search_list = [search_string] + search_list
+        if type(search_entry) is str:
+            search_entry = search_entry.decode('utf-8')
+        if search_entry in search_list:
+            search_list.remove(search_entry)
+        elif search_entry['query'] in search_list:
+            search_list.remove(search_entry['query'])
+        search_list = [search_entry] + search_list
         with codecs.open(
             self.search_history_file, 'w', encoding='utf-8'
         ) as fp:
@@ -153,41 +195,111 @@ class EynyGui(object):
             search_list = []
         return search_list
 
-    def search_video(self, new_search=False, search_string=None, page=1):
+    def search(self, new_search=False, search_string=None, page=1,
+        search_by=None):
         if new_search:
+            search_by_list = ['keyword', 'user', 'channel']
+            search_by = xbmcgui.Dialog().select(
+                'Search by',
+                list=search_by_list,
+                preselect=0)
+            if search_by < 0:
+                return
+            search_by = search_by_list[search_by]
             search_string = xbmcgui.Dialog().input(
                 'Search term',
                 type=xbmcgui.INPUT_ALPHANUM).strip()
+            if not search_string:
+                return
 
         if search_string is None:
-            xbmcplugin.addDirectoryItem(
-                handle=self.addon_handle,
-                url=self._build_url('search', new_search=True),
-                listitem=xbmcgui.ListItem("New Search"),
-                isFolder=True)
+            icon = self._get_icon('search.png')
+            self._add_folder('New Search', 'search', icon=icon, new_search=True)
 
-            for search_string in self.get_search_history():
-                xbmcplugin.addDirectoryItem(
-                    handle=self.addon_handle,
-                    url=self._build_url(
-                        'search',
-                        search_string=search_string.encode('utf-8')),
-                    listitem=xbmcgui.ListItem(search_string),
-                    isFolder=True)
+            for search_entry in self.get_search_history():
+                if type(search_entry) is dict:
+                    search_string = search_entry['query']
+                    display_string = search_entry['display']
+                    search_by = search_entry['by']
+                else:
+                    search_string = search_entry
+                    display_string = search_entry.encode('utf-8')
+                    search_by = 'keyword'
+                self._add_folder(display_string, 'search',
+                    search_string=search_string, search_by=search_by)
             return xbmcplugin.endOfDirectory(self.addon_handle)
 
-        result = self.eyny.search_video(search_string, page=page)
-        if len(result['videos']) > 0:
-            self.update_search_history(search_string)
+        if search_by == 'user' or search_by == 'channel':
+            result = self.eyny.search_user_channel(
+                search_by,
+                search_string,
+                page=page)
+            if not result or 'username' not in result or not result['username']:
+                xbmcgui.Dialog().notification(
+                    'No such ' + search_by,
+                    search_string,
+                    icon=xbmcgui.NOTIFICATION_ERROR)
+                return
+            if page == 1:
+                xbmcgui.Dialog().notification(
+                    result['username'],
+                    '/' + search_by + '/' + search_string)
+                self.update_search_history({
+                    'by': search_by,
+                    'query': search_string,
+                    'display': result['username']})
+                if 'has_playlist' in result and result['has_playlist']:
+                    self._add_folder(
+                        '專輯',
+                        'playlist',
+                        search_by=search_by,
+                        search_string=search_string)
+        else:  # 'keyword'
+            result = self.eyny.search_video(search_string, page=page)
+            if not result or len(result['items']) == 0:
+                xbmcgui.Dialog().notification(
+                    'No results',
+                    search_string,
+                    icon=xbmcgui.NOTIFICATION_ERROR)
+                return
+            self.update_search_history({
+                'by': 'keyword',
+                'query': search_string,
+                'display': search_string})
 
-        self._add_video_items(result['videos'], result['current_url'])
+        self._add_video_items(result['items'], result['current_url'])
         if page < int(result['last_page']):
             self._add_page_item(
                 page + 1,
                 result['last_page'],
                 'search',
+                search_by=search_by,
                 search_string=search_string
             )
+        xbmcplugin.endOfDirectory(self.addon_handle)
+
+    def list_playlist(self, search_by, search_string, page=1):
+        result = self.eyny.search_user_channel(
+            search_by,
+            search_string,
+            page=page,
+            playlist=True)
+        self._add_playlist_items(result['items'], result['current_url'])
+        if page < int(result['last_page']):
+            self._add_page_item(
+                page + 1,
+                result['last_page'],
+                'playlist',
+                search_by=search_by,
+                search_string=search_string
+            )
+        xbmcplugin.endOfDirectory(self.addon_handle)
+
+    def show_playlist(self, pid):
+        result = self.eyny.list_videos_in_playlist(pid=pid)
+        if not result or 'items' not in result or not result['items']:
+            return
+        self._add_video_items(result['items'], result['current_url'])
         xbmcplugin.endOfDirectory(self.addon_handle)
 
     def play_video(self, vid, size=None):
