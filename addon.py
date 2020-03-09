@@ -71,6 +71,7 @@ class EynyGui(object):
                 'Version/9.1.3 Safari/601.7.8')
         added_header = url + '|' + urllib.urlencode({
             'User-Agent': USER_AGENT,
+            'Range': '',
             'Referer': referer})
         return added_header
 
@@ -92,8 +93,9 @@ class EynyGui(object):
             self._add_folder(category['name'], 'list', cid=category['cid'])
 
     def _add_page_item(self, page, last_page, url_mode, **url_kwargs):
-        self._add_folder('~~ Go to Page {}/{} ~~'.format(page, last_page),
-                         url_mode, page=page, **url_kwargs)
+        next_icon = self._get_icon('next.png')
+        self._add_folder('Next Page ({}/{})'.format(page, last_page),
+                         url_mode, icon=next_icon, page=page, **url_kwargs)
 
     def _add_video_items(self, videos, current_url):
         for video in videos:
