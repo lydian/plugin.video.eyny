@@ -1,21 +1,34 @@
-# v0.1.1
-1. update eyny client_lib so that it can parse the new eyny video site.
-# v0.2.0
-1. Add search function
-# v0.2.1
-1. Fix page parsing issue
-# v0.2.1
-1. Fix page parsing issue
-# v0.3.0
-1. Add Search function
+# v.5.0
+1. support python 2/3
+2. fix search encoding issue
+3. allow search by user / category
+
+# v.4.6
+1. fix list videos from different category
+2. select from subcategory
+
+# v .4.5
+1. the site now require login to see contents
+
+# v .4.3
+1. Fix search parsing
+
 # v0.4.1
 1. Fix parsing issue
 2. Record search log for faster query next time.
 3. Fix the issue that resolution selection failed
-# v .4.3
-1. Fix search parsing
-# v .4.5
-1. the site now require login to see contents
-# v.4.6
-1. fix list videos from different category
-2. select from subcategory
+
+# v0.3.0
+1. Add Search function
+
+# v0.2.1
+1. Fix page parsing issue
+
+# v0.2.1
+1. Fix page parsing issue
+
+# v0.2.0
+1. Add search function
+
+# v0.1.1
+1. update eyny client_lib so that it can parse the new eyny video site.

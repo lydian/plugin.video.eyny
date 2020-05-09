@@ -1,11 +1,19 @@
 # -*- coding: utf-8 -*-
+from future import standard_library
+standard_library.install_aliases()
+from builtins import str
+from builtins import map
+from builtins import object
+
 import codecs
 import json
 import logging
 import os
 import sys
-import urlparse
-import urllib
+import urllib.parse
+import urllib.request
+import urllib.parse
+import urllib.error
 
 import xbmc
 import xbmcaddon
@@ -62,14 +70,14 @@ class EynyGui(object):
     def _build_url(self, mode, **kwargs):
         query = kwargs
         query['mode'] = mode
-        return self.base_url + '?' + urllib.urlencode(query)
+        return self.base_url + '?' + urllib.parse.urlencode(query)
 
     def build_request_url(self, url, referer):
         USER_AGENT = (
-                'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) '
-                'AppleWebKit/601.7.8 (KHTML, like Gecko) '
-                'Version/9.1.3 Safari/601.7.8')
-        added_header = url + '|' + urllib.urlencode({
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) '
+            'AppleWebKit/601.7.8 (KHTML, like Gecko) '
+            'Version/9.1.3 Safari/601.7.8')
+        added_header = url + '|' + urllib.parse.urlencode({
             'User-Agent': USER_AGENT,
             'Range': '',
             'Referer': referer})
@@ -77,10 +85,10 @@ class EynyGui(object):
 
     def _add_folder(self, item_label, mode, icon=None, **url_kwargs):
         xbmcplugin.addDirectoryItem(
-                handle=self.addon_handle,
-                url=self._build_url(mode, **url_kwargs),
-                listitem=xbmcgui.ListItem(item_label, iconImage=icon),
-                isFolder=True)
+            handle=self.addon_handle,
+            url=self._build_url(mode, **url_kwargs),
+            listitem=xbmcgui.ListItem(item_label, iconImage=icon),
+            isFolder=True)
 
     def main(self):
         search_icon = self._get_icon('search.png')
@@ -159,7 +167,7 @@ class EynyGui(object):
         except ValueError as e:
             xbmcgui.Dialog().ok(
                 heading='Error',
-                line1=unicode(e).encode('utf-8'))
+                line1=str(e).encode('utf-8'))
             return
 
         sub_cids = [sub['cid'] for sub in result['category']['sub_categories']]
@@ -168,9 +176,11 @@ class EynyGui(object):
         self._add_video_items(result['items'], result['current_url'])
         if page < int(result['last_page']):
             self._add_page_item(
-                page+1,
+                page + 1,
                 result['last_page'],
-                'list', cid=cid)
+                'list',
+                cid=cid
+            )
         xbmcplugin.endOfDirectory(self.addon_handle)
 
     def update_search_history(self, search_entry):
@@ -197,8 +207,9 @@ class EynyGui(object):
             search_list = []
         return search_list
 
-    def search(self, new_search=False, search_string=None, page=1,
-        search_by=None):
+    def search(
+        self, new_search=False, search_string=None, page=1, search_by=None
+    ):
         if new_search:
             search_by_list = ['keyword', 'user', 'channel']
             search_by = xbmcgui.Dialog().select(
@@ -216,7 +227,9 @@ class EynyGui(object):
 
         if search_string is None:
             icon = self._get_icon('search.png')
-            self._add_folder('New Search', 'search', icon=icon, new_search=True)
+            self._add_folder(
+                'New Search', 'search', icon=icon, new_search=True
+            )
 
             for search_entry in self.get_search_history():
                 if type(search_entry) is dict:
@@ -227,8 +240,10 @@ class EynyGui(object):
                     search_string = search_entry
                     display_string = search_entry.encode('utf-8')
                     search_by = 'keyword'
-                self._add_folder(display_string, 'search',
-                    search_string=search_string, search_by=search_by)
+                self._add_folder(
+                    display_string, 'search',
+                    search_string=search_string, search_by=search_by
+                )
             return xbmcplugin.endOfDirectory(self.addon_handle)
 
         if search_by == 'user' or search_by == 'channel':
@@ -236,7 +251,7 @@ class EynyGui(object):
                 search_by,
                 search_string,
                 page=page)
-            if not result or 'username' not in result or not result['username']:
+            if not result or result.get("username", None):
                 xbmcgui.Dialog().notification(
                     'No such ' + search_by,
                     search_string,
@@ -310,7 +325,7 @@ class EynyGui(object):
         if size is None and len(play_info['sizes']) > 1:
             ret = int(xbmcgui.Dialog().select(
                 'Please choose quality',
-                map(str, play_info['sizes'])))
+                list(map(str, play_info['sizes']))))
             logging.warning(
                 'SELECTED: {} - {}'.format(ret, play_info['sizes'][ret]))
             if ret < 0 or ret >= len(play_info['sizes']):
@@ -331,6 +346,6 @@ class EynyGui(object):
 if __name__ == '__main__':
     base_url = sys.argv[0]
     addon_handle = int(sys.argv[1])
-    args = dict(urlparse.parse_qsl(sys.argv[2][1:]))
+    args = dict(urllib.parse.parse_qsl(sys.argv[2][1:].decode("utf-8")))
     gui = EynyGui(base_url, addon_handle)
     gui.handle(args)

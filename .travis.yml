@@ -1,9 +1,27 @@
 sudo: false
 language: python
 python:
-- '2.7'
+- '3.6'
 install: pip install tox-travis
+before_install:
+- sudo apt-get update -qq
+- sudo apt-get install -qq libxml2-utils
 script: tox
+
+before_deploy:
+- make build
+- export BUILD_PKG=$(ls dist/*.zip)
+- echo "deploying ${BUILD_PKG}"
+
+deploy:
+  provider: releases
+  api_key:
+    secure: LWkDGkhbdznktdxrGrVkRwobQq7CaVw4y1Q0yv5CCtsAp4Qn5V0hD9vrUDErQYf5rXF0BvHeS032YhXKwByyFRRxsa0OvzBXU2F24XD5xXAodbnaGbILCm5kxh0yb+qdDIyx8LMOS8HgVASRyp3Dnmf8KyyrCRDMcGJefHTLv6xQ4jMxR0Iun3Gc/tgXKPIEiUmE/0aPZauRLjbfFVjy2HoFtyN0S+4zc3uwbd8df8qKZONcggFNm55gXPrJgchyweTX6t9pst95svQrwAhmKU5IO6JROm68no6CFExCJXuKcO8zx8m5L/4SToI35+ZvawsqmBekEWRHkd1qsY8u1mowStdOjbUbY82pGiK15VL8EZ/bHLdnsTGDeop+OysHLAAWrbop880d+JEumii9xv4uVE7unug8DGaarvYK6qvUSnddNVK8SP0E5WYJZj66Hgrxro1M2UNDIMESq3QHqIr/5titJ5vnJUP/WV+T3lHvmIZPTYz5qXkSdcIWI1IE/W/JLqt7JhRRIaIVlfvkH2ht8/i9GnertHf0iHumioMA1XARc9INxLnKLUaQtwtDKxlcWO3fLjcOaRLPShkWgrK2M37djc5zxRLLQM2VZVRNyrqOXB8Hpn3xi7CCNuGbeRUbquoSQfCVZGe7ghvvblMs/ggBNB2PhgXCKVfVqR0=
+  file: "${BUILD_PKG}"
+  on:
+    repo: lydian/plugin.video.eyny
+  skip_cleanup: 'true'
+
 notifications:
   slack:
     secure: EHlr8e/jiMcIwrRVCVj5HaMMpCpcgvoZIE/SV59MUz0TuOQQgy+kn4+ACyNCvZLXrZzxdW4RtQ+jvn4WA8bU19Pvkt4xPIbAG3wjyt6km3fqQUNCjdo7KCZ/MaoWNAeVftu0oNcbccB0uZMTXsQRhqgaLyhCsi/RC1gcI/swDy7DrShRNAd58ISBuYq0x0bTpn4kKldHiHwkYbJegkCRtz44CU9mJBHy+GaHMpLXbRNB0SH8wqfmzUPpB2vp63auPF/bYaz0wCGOWyywicNET3RYfNoPVsPINKWCEIuvUFRpVRhXFUJ0Arq8qemURJjTJrR1LpO2BIrmRAVxAlj0qJAGjRRPU3/Yiuip5Uo5wNBwInUM8ahE2AKWWEmb6Pk5hy6q4sqGQ+UTb6ma8wdF8SDjytLujEyYRuXyf6wyJK/5RazGQJp9+aaBqF/orSZ6uCepwYO5S7i3qzOUiTir4vJkZFGmih6RKyQTAeVl5LTAiGnJJnEKi5lQxwKbfwPPr0jlQcjf14sio1OlxEdvxnG/IHMdb0/4fdL7zZq40yuIb5BMzTMYDAMVmOQBPlcHvSh5Z6vhZ29z1aD+YOkdEsyVTEkJxDIBMQA2FTmWqn+FAoiCGztLfAhCbVo66IFQoxOQ3QHaM2xTKghFrSBaXFOXKSJSBYngsXrRrYbm4PY=
