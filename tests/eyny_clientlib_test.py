@@ -35,7 +35,7 @@ class TestEynyForum(object):
         result = forum.list_filters()
         assert len(result['categories']) > 0
         categories = [cat['name'] for cat in result['categories']]
-        assert u"其他" in categories
+        assert len(categories) >= 1
 
     @pytest.mark.parametrize('search_string', (
         'test', u'三國'
@@ -63,10 +63,10 @@ class TestEynyForum(object):
 
     @pytest.fixture
     def vid(self, cid, forum):
-        videos = filter(
+        videos = list(filter(
             lambda video: video.get('quality') >= 360,
             forum.list_videos(cid, None)['items']
-        )
+        ))
         return random.choice(videos)['id']
 
     def test_get_video_link(self, forum, vid):
@@ -74,11 +74,11 @@ class TestEynyForum(object):
         assert result['video'].startswith('http')
 
     @pytest.fixture(params=[
-        {'type':'user','query':'yahoo','page':1,'pl':False},
-        {'type':'user','query':'yahoo','page':2,'pl':False},
-        {'type':'user','query':'yahoo','page':1,'pl':True},
-        {'type':'channel','query':'UC_zEqrZt9z','page':1,'pl':False},
-        {'type':'user','query':'NotExisted','page':1,'pl':False}])
+        {'type': 'user', 'query': 'yahoo', 'page': 1, 'pl': False},
+        {'type': 'user', 'query': 'yahoo', 'page': 2, 'pl': False},
+        {'type': 'user', 'query': 'yahoo', 'page': 1, 'pl': True},
+        {'type': 'channel', 'query': 'UC_zEqrZt9z', 'page': 1, 'pl': False},
+        {'type': 'user', 'query': 'NotExisted', 'page': 1, 'pl': False}])
     def user_channel(self, request):
         return request.param
 

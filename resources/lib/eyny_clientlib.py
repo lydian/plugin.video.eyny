@@ -107,8 +107,7 @@ class EynyForum(object):
             is_login = self._login()
         except ValueError as e:
             if (
-                e.message.strip() ==
-                u'由於你的帳號從多處登入，已經被強制登出。'
+                e.message.strip() == u'由於你的帳號從多處登入，已經被強制登出。'
             ):
                 is_login = self._login()
             if not is_login:
@@ -134,7 +133,7 @@ class EynyForum(object):
 
     def get_video_link(self, vid, size):
         current_url, soup = self._visit_and_parse(
-                'watch?v={}&size={}'.format(vid, size))
+            'watch?v={}&size={}'.format(vid, size))
         title = soup.find('title').string.replace(u'-  伊莉影片區', '').strip()
 
         sizes = []
@@ -212,8 +211,8 @@ class EynyForum(object):
                     try:
                         quality = int(element.find_all('p')[2].find(
                             lambda e: (
-                                e.name == 'font' and
-                                re.match(r'^\d+$', e.string)
+                                e.name == 'font'
+                                and re.match(r'^\d+$', e.string)
                             )
                         ).string)
                     except Exception:
@@ -274,7 +273,7 @@ class EynyForum(object):
             video_table = soup.find_all('table', class_='block')[3]
             pages_row = video_table.find('tr')
             videos_rows = list(pages_row.find_next_siblings('tr'))[:-1]
-        except:
+        except Exception:
             return None
         return {
             'items': self._get_item_list(videos_rows),
@@ -295,7 +294,7 @@ class EynyForum(object):
         tables = soup.find_all('table', class_='block')
         try:
             username = tables[0].find('span', id='username').a.contents[0]
-        except:
+        except Exception:
             return None
         if not username:
             return None
@@ -308,7 +307,7 @@ class EynyForum(object):
                 playlist_table = tables[2] if len(tables) > 2 else None
                 title = playlist_table.find('tr').td.contents[0]
                 has_playlist = title == u'Playlist' or title == u'專輯'
-            except:
+            except Exception:
                 pass
         return {
             'username': username,
