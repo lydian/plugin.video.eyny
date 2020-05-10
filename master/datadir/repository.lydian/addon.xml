@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<addon id="repository.lydian" name="Lydian's KODI Repository" version="1.0.3" provider-name="lydian">
+    <extension point="xbmc.addon.repository">
+        
+        <dir minversion="17.0.0">
+            <info compressed="false">https://lydian.github.io/plugin.video.eyny/master/addons.xml</info>
+            <checksum>https://lydian.github.io/plugin.video.eyny/master/addons.xml.md5</checksum>
+            <datadir zip="true">https://lydian.github.io/plugin.video.eyny/master/datadir/</datadir>
+        </dir>
+
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <summary lang="en">A personal Kodi addon repository from https://github.com/lydian/plugin.video.eyny</summary>
+        <description lang="en">This repository contains addons that are made by Lydian</description>
+        <platform>all</platform>
+        <license>GPL-3.0</license>
+        <assets>
+            <icon>resources/icon.png</icon>
+            <fanart></fanart>
+        </assets>
+    </extension>
+</addon>

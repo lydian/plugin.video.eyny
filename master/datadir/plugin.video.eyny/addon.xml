@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<addon id="plugin.video.eyny" name="eyny" version="0.5.1" provider-name="LydianLee">
+  <requires>
+    <import addon="xbmc.python" version="2.24.0"/>
+    <import addon="script.module.requests" version="2.9.1"/>
+    <import addon="script.module.simplejson" version="3.3.0"/>
+    <import addon="script.module.beautifulsoup4" version="4.3.2"/>
+    <import addon="script.module.html5lib" version="0.999.0"/>
+    <import addon="script.module.urlresolver" version="2.10.0"/>
+    <import addon="script.module.future" version="0.16"/>
+  </requires>
+  <extension point="xbmc.python.pluginsource" library="addon.py">
+    <provides>video</provides>
+  </extension>
+  <extension point="xbmc.addon.metadata">
+    <summary lang="en">Plugin for Eyny forum</summary>
+    <description lang="en">Enjoy video from http://eyny.com</description>
+    <summary lang="zh">伊莉影片區</summary>
+    <description lang="zh">在kodi上直接欣賞伊莉論壇影片</description>
+    <disclaimer lang="zh"></disclaimer>
+    <language></language>
+    <platform>all</platform>
+    <license>GNU GENERAL PUBLIC LICENSE. Version 2, June 1991</license>
+    <forum></forum>
+    <website>http://www.eyny.com</website>
+    <email></email>
+    <source></source>
+    <assets>
+        <icon>resources/eyny.png</icon>
+	<screenshot>resources/screenshot/category.png</screenshot>
+    </assets>
+  </extension>
+</addon>
