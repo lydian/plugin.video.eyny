@@ -65,7 +65,7 @@ def main():
                 addon_id = addon.get('id')
                 addon_nm = addon.get('name')
                 addon_ver = addon.get('version')
-                plugin_zip_link = '{branch}/{datadir}/{id}/{id}-{ver}.zip'.format(
+                plugin_zip_link = '{branch}/{datadir}/{id}/{id}-{ver}.zip?raw=true'.format(
                     branch=b['name'], id=addon_id, ver=addon_ver, datadir=args.datadir)
                 addons.append(
                     Addon(addon_id, addon_nm, addon_ver, plugin_zip_link)

@@ -1,6 +1,6 @@
 .PHONY: test build build-eyny clean
 test:
-	tox
+	tox -e eyny
 
 build: build-eyny
 
