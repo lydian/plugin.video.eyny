@@ -251,7 +251,7 @@ class EynyGui(object):
                 search_by,
                 search_string,
                 page=page)
-            if not result or result.get("username", None):
+            if not result or not result.get("username", None):
                 xbmcgui.Dialog().notification(
                     'No such ' + search_by,
                     search_string,
