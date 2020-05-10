@@ -1,19 +1,17 @@
-.phony: test
-NAME := $(shell xmllint --xpath './addon[@name="eyny"]/@id'  addon.xml | cut -d '=' -f 2 | sed 's/"//g')
-VERSION := $(shell xmllint --xpath './addon[@name="eyny"]/@version'  addon.xml | cut -d '=' -f 2 | sed 's/"//g')
+.PHONY: test build build-eyny clean
 test:
 	tox
 
-build:
+build: build-eyny
+
+
+build-eyny: PACKAGE := plugin.video.eyny
+build-eyny:
 	mkdir -p dist/
-	ln -s ./ $(NAME)
-	zip -r dist/$(NAME)-$(VERSION).zip  $(NAME)/ \
-	    -i $(NAME)/addon.xml \
-	       $(NAME)/addon.py \
-	       $(NAME)/changelog.txt \
-	       $(NAME)/README.md  \
-	       $(NAME)/resources/**\/*.png \
-	       $(NAME)/resources/**\/*.py
+	cd src/  && \
+	export VERSION=$$(xmllint --xpath './addon[@name="eyny"]/@version'  $(PACKAGE)/addon.xml | cut -d '=' -f 2 | sed 's/"//g') && \
+	rm -f dist/$(PACKAGE)-$${VERSION}.zip && \
+	zip -r ../dist/$(PACKAGE)-$${VERSION}.zip  $(PACKAGE)/ -x **/*.pyc **/*.pyo **/.\* *__pycache__*
 
 clean:
 	rm -rf dist/

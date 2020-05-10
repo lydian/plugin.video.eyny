@@ -1,25 +1,27 @@
 language: python
 python:
 - '3.6'
+
+env:
+    global:
+        - ENCRYPTION_LABEL: "189e52c2c347"
+        - COMMIT_AUTHOR_EMAIL: "lydianly@gmail.com"
+
 install: pip install tox-travis
 before_install:
 - sudo apt-get update -qq
 - sudo apt-get install -qq libxml2-utils
-script: tox
 
-before_deploy:
-- make build
-- export BUILD_PKG=$(ls dist/*.zip)
-- echo "deploying ${BUILD_PKG}"
+script: tox
+branches:
+    only:
+        - master
 
 deploy:
-  provider: releases
-  api_key:
-    secure: LWkDGkhbdznktdxrGrVkRwobQq7CaVw4y1Q0yv5CCtsAp4Qn5V0hD9vrUDErQYf5rXF0BvHeS032YhXKwByyFRRxsa0OvzBXU2F24XD5xXAodbnaGbILCm5kxh0yb+qdDIyx8LMOS8HgVASRyp3Dnmf8KyyrCRDMcGJefHTLv6xQ4jMxR0Iun3Gc/tgXKPIEiUmE/0aPZauRLjbfFVjy2HoFtyN0S+4zc3uwbd8df8qKZONcggFNm55gXPrJgchyweTX6t9pst95svQrwAhmKU5IO6JROm68no6CFExCJXuKcO8zx8m5L/4SToI35+ZvawsqmBekEWRHkd1qsY8u1mowStdOjbUbY82pGiK15VL8EZ/bHLdnsTGDeop+OysHLAAWrbop880d+JEumii9xv4uVE7unug8DGaarvYK6qvUSnddNVK8SP0E5WYJZj66Hgrxro1M2UNDIMESq3QHqIr/5titJ5vnJUP/WV+T3lHvmIZPTYz5qXkSdcIWI1IE/W/JLqt7JhRRIaIVlfvkH2ht8/i9GnertHf0iHumioMA1XARc9INxLnKLUaQtwtDKxlcWO3fLjcOaRLPShkWgrK2M37djc5zxRLLQM2VZVRNyrqOXB8Hpn3xi7CCNuGbeRUbquoSQfCVZGe7ghvvblMs/ggBNB2PhgXCKVfVqR0=
-  file: "${BUILD_PKG}"
+  provider: script
+  script: bash .github/build.sh
   on:
     repo: lydian/plugin.video.eyny
-    tags: true
   cleanup: false
 
 notifications:
