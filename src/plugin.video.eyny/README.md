@@ -10,10 +10,10 @@ Please install from the [repository](https://raw.githubusercontent.com/lydian/ko
 
 ## Screenshot
 1. Category
-![](https://github.com/lydian/plugin.video.eyny/raw/master/resources/screenshot/category.png "Category")
+![](https://github.com/lydian/plugin.video.eyny/raw/master/src/plugin.video.eyny/resources/screenshot/category.png "Category")
 2. Video list
-![](https://github.com/lydian/plugin.video.eyny/raw/master/resources/screenshot/video_list.png "Video List")
+![](https://github.com/lydian/plugin.video.eyny/raw/master/src/plugin.video.eyny/resources/screenshot/video_list.png "Video List")
 3. Settings
-![](https://github.com/lydian/plugin.video.eyny/raw/master/resources/screenshot/settings.png "Settings")
+![](https://github.com/lydian/plugin.video.eyny/raw/master/src/plugin.video.eyny/resources/screenshot/settings.png "Settings")
 
 
