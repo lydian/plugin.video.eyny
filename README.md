@@ -10,4 +10,4 @@ The following addons are available here:
 - [__Lydian's KODI Repository__](master/datadir/repository.lydian/repository.lydian-1.0.3.zip?raw=true) repository.lydian v1.0.3
 
 ----
-_Generated with [instant-kodi-repo](https://github.com/ping/instant-kodi-repo/) from_ [``f75605d``](https://github.com/lydian/plugin.video.eyny/commit/f75605d6ad386c40f476631a506f510deec4f9c8)
+_Generated with [instant-kodi-repo](https://github.com/ping/instant-kodi-repo/) from_ [``b9703b8``](https://github.com/lydian/plugin.video.eyny/commit/b9703b829c1fb7ab86af2fb2a39bdc9924153cc2)
