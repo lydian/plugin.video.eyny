@@ -332,10 +332,7 @@ class EynyGui(object):
                 return
             return self.play_video(vid, play_info['sizes'][ret])
 
-        play_item = xbmcgui.ListItem(
-            path=self.build_request_url(
-                play_info['video'],
-                play_info['current_url']))
+        play_item = xbmcgui.ListItem(path=play_info['video'])
         play_item.setProperty("IsPlayable", "true")
         play_item.setInfo(
             type="Video",
