@@ -1,3 +1,6 @@
+# v.5.2
+1. fix video playback fail
+
 # v.5.1
 1. fix the bug that failed to search user / channel
 1
