@@ -6,8 +6,8 @@ The following addons are available here:
 
 [__master__](master/addons.xml) (Kodi ver. 17.0.0):
 
-- [__eyny__](master/datadir/plugin.video.eyny/plugin.video.eyny-0.5.1.zip?raw=true) plugin.video.eyny v0.5.1
+- [__eyny__](master/datadir/plugin.video.eyny/plugin.video.eyny-0.5.2.zip?raw=true) plugin.video.eyny v0.5.2
 - [__Lydian's KODI Repository__](master/datadir/repository.lydian/repository.lydian-1.0.3.zip?raw=true) repository.lydian v1.0.3
 
 ----
-_Generated with [instant-kodi-repo](https://github.com/ping/instant-kodi-repo/) from_ [``65f6430``](https://github.com/lydian/plugin.video.eyny/commit/65f6430225c645179e133fc14b6259e67581f223)
+_Generated with [instant-kodi-repo](https://github.com/ping/instant-kodi-repo/) from_ [``2c12db4``](https://github.com/lydian/plugin.video.eyny/commit/2c12db497b5367908278f8e0a73d161be810b24d)
