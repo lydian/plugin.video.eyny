@@ -2,4 +2,5 @@
 <settings>
     <setting id="username" type="text" label="Username" default=""/>
     <setting id="password" type="text" option="hidden" label="Password" default=""/>
+    <setting id="display_free_tag" type="bool" default="false" label="Display 'Free' tag" />
 </settings>

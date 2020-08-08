@@ -16,12 +16,13 @@ script: tox
 branches:
     only:
         - master
+        - /^plugin.video.eyny-.*$/
 
 deploy:
   provider: script
   script: bash .github/build.sh
   on:
-    repo: lydian/plugin.video.eyny
+    tags: true
   cleanup: false
 
 notifications:

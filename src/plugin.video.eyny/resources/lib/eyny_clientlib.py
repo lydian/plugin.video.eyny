@@ -232,13 +232,22 @@ class EynyForum(object):
                     quality = None
                     duration_in_seconds = None
 
+                is_free = element.find(
+                    lambda e:(
+                        e.name == 'font'
+                        and e.get("title", "") == u"免費"
+                        and e.string.strip() == "Free"
+                    )
+                ) is not None
+
                 items.append({
                     'type': item_type,
                     'id': match.group('id'),
                     'image': image,
                     'title': title,
                     'quality': quality,
-                    'duration': duration_in_seconds
+                    'duration': duration_in_seconds,
+                    'free': is_free,
                 })
         return items
 

@@ -30,6 +30,7 @@ class EynyGui(object):
         self.addon_path = addon.getAddonInfo('path')
         self.base_url = base_url
         self.addon_handle = addon_handle
+        self.display_free_tag = addon.getSetting('display_free_tag') == "true"
         self.eyny = EynyForum(
             addon.getSetting('username'), addon.getSetting('password'))
         self.search_history_file = os.path.join(
@@ -107,9 +108,12 @@ class EynyGui(object):
 
     def _add_video_items(self, videos, current_url):
         for video in videos:
-            title = video['title']
+            title = ""
             if 'quality' in video:
-                title = '({}p) '.format(video['quality']) + title
+                title += '({}p) '.format(video['quality'])
+            if self.display_free_tag and video['free']:
+                title += '[free]'
+            title += video['title'] or "No TITLE"
             li = xbmcgui.ListItem(label=title)
             li.setProperty('IsPlayable', 'true')
             image_url = self.build_request_url(
