@@ -1,3 +1,6 @@
+# v.5.3
+1. allow configure in settings to show if the video is free or not
+
 # v.5.2
 1. fix video playback fail
 
